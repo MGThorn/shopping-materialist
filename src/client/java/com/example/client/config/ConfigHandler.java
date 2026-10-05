@@ -19,6 +19,7 @@ public class ConfigHandler implements IConfigHandler {
 
 		if (element != null && element.isJsonObject()) {
 			JsonObject root = element.getAsJsonObject();
+			ConfigUtils.readConfigBase(root, "Generic", Configs.Generic.OPTIONS);
 			ConfigUtils.readHotkeys(root, "Hotkeys", Hotkeys.HOTKEY_LIST);
 		}
 	}
@@ -27,6 +28,7 @@ public class ConfigHandler implements IConfigHandler {
 	public void save() {
 		Path configFile = FileUtils.getConfigDirectory().resolve(CONFIG_FILE_NAME);
 		JsonObject root = new JsonObject();
+		ConfigUtils.writeConfigBase(root, "Generic", Configs.Generic.OPTIONS);
 		ConfigUtils.writeHotkeys(root, "Hotkeys", Hotkeys.HOTKEY_LIST);
 		JsonUtils.writeJsonToFile(root, configFile);
 	}

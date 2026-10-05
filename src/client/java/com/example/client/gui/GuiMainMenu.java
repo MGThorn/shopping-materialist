@@ -18,6 +18,8 @@ public class GuiMainMenu extends GuiBase {
 		int y = 30;
 		int width = this.getButtonWidth();
 
+		this.createButton(x, y, width, ButtonType.SHOPPING_LISTS);
+		y += 22;
 		this.createButton(x, y, width, ButtonType.CONFIGURATION);
 	}
 
@@ -37,6 +39,7 @@ public class GuiMainMenu extends GuiBase {
 	}
 
 	private enum ButtonType {
+		SHOPPING_LISTS("shopping_lists"),
 		CONFIGURATION("configuration");
 
 		private final String translationKey;
@@ -51,6 +54,7 @@ public class GuiMainMenu extends GuiBase {
 
 		void open(GuiMainMenu parent) {
 			switch (this) {
+				case SHOPPING_LISTS -> GuiBase.openGui(new GuiShoppingLists(parent));
 				case CONFIGURATION -> GuiBase.openGui(new GuiConfigs(parent));
 			}
 		}

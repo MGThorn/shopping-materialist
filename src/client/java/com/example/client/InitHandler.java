@@ -11,6 +11,7 @@ import com.example.client.config.ConfigHandler;
 import com.example.client.config.Hotkeys;
 import com.example.client.gui.GuiConfigs;
 import com.example.client.gui.GuiMainMenu;
+import com.example.client.gui.GuiShoppingLists;
 
 public class InitHandler implements IInitializationHandler {
 	@Override
@@ -31,6 +32,11 @@ public class InitHandler implements IInitializationHandler {
 
 		Hotkeys.OPEN_GUI_CONFIGS.getKeybind().setCallback((action, key) -> {
 			GuiBase.openGui(new GuiConfigs());
+			return true;
+		});
+
+		Hotkeys.OPEN_GUI_SHOPPING_LIST.getKeybind().setCallback((action, key) -> {
+			GuiBase.openGui(new GuiShoppingLists(null));
 			return true;
 		});
 	}

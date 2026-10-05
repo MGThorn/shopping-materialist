@@ -3,7 +3,9 @@
 	"package": "com.example.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"MaterialListAreaAnalyzerAccessor",
+		"MixinGuiMaterialList"
 	],
 	"injectors": {
 		"defaultRequire": 1
