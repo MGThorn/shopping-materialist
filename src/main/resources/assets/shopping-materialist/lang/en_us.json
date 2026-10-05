@@ -1,0 +1,10 @@
+{
+  "shopping-materialist.gui.title.main_menu": "Shopping Materialist - Main Menu",
+  "shopping-materialist.gui.title.configs": "Shopping Materialist - Configs",
+  "shopping-materialist.gui.button.change_menu.configuration": "Configuration menu",
+  "shopping-materialist.gui.button.config_gui.all": "All",
+  "shopping-materialist.gui.button.config_gui.generic": "Generic",
+
+  "shopping-materialist.config.hotkeys.name.openGuiConfigs": "openGuiConfigs",
+  "shopping-materialist.config.hotkeys.comment.openGuiConfigs": "Open the Shopping Materialist config GUI"
+}
