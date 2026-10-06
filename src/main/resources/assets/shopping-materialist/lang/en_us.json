@@ -1,0 +1,48 @@
+{
+  "shopping-materialist.gui.title.main_menu": "Shopping Materialist - Main Menu",
+  "shopping-materialist.gui.title.configs": "Shopping Materialist - Configs",
+  "shopping-materialist.gui.title.shopping_lists": "Shopping Materialist - Shopping Lists",
+  "shopping-materialist.gui.title.shopping_list_editor": "Shopping List - %s",
+  "shopping-materialist.gui.title.material_list": "Shopping List - %s",
+
+  "shopping-materialist.gui.button.change_menu.shopping_lists": "Shopping Lists",
+  "shopping-materialist.gui.button.change_menu.configuration": "Configuration menu",
+  "shopping-materialist.gui.button.config_gui.all": "All",
+  "shopping-materialist.gui.button.config_gui.generic": "Generic",
+  "shopping-materialist.gui.button.config_gui.shopping_list": "Shopping List",
+  "shopping-materialist.gui.button.edit_shopping_list": "Edit items",
+  "shopping-materialist.gui.button.edit_shopping_list.hover.shopping_list": "Edit the items of this shopping list",
+  "shopping-materialist.gui.button.edit_shopping_list.hover.material_list": "Create a shopping list from this material list and edit it",
+  "shopping-materialist.message.shopping_list_exists": "A shopping list named '%s' already exists!\n- Hold Shift to overwrite it",
+
+  "shopping-materialist.gui.shopping_lists.create": "Create list",
+  "shopping-materialist.gui.shopping_lists.default_name": "Shopping List %s",
+  "shopping-materialist.gui.shopping_lists.open": "Open",
+  "shopping-materialist.gui.shopping_lists.edit": "Edit",
+  "shopping-materialist.gui.shopping_lists.rename": "Rename",
+  "shopping-materialist.gui.shopping_lists.delete": "Delete",
+  "shopping-materialist.gui.shopping_lists.info": "%s items, %s total",
+  "shopping-materialist.gui.shopping_lists.empty": "No shopping lists yet. Type a name above and press 'Create list'.",
+  "shopping-materialist.gui.shopping_lists.rename_title": "Rename shopping list",
+  "shopping-materialist.gui.shopping_lists.delete_title": "Delete shopping list",
+  "shopping-materialist.gui.shopping_lists.delete_message": "Really delete the shopping list '%s'?",
+  "shopping-materialist.gui.shopping_lists.error.name_exists": "A shopping list named '%s' already exists",
+
+  "shopping-materialist.gui.shopping_list_editor.open_material_list": "Open material list",
+  "shopping-materialist.gui.shopping_list_editor.done": "Done",
+  "shopping-materialist.gui.shopping_list_editor.item_count": "%s items - Left-click: add, Right-click: remove, Shift: full stack, Ctrl: custom amount",
+  "shopping-materialist.gui.shopping_list_editor.entries_header": "In list: %s items, %s total",
+  "shopping-materialist.gui.shopping_list_editor.empty": "Click items on the left to add them",
+  "shopping-materialist.gui.shopping_list_editor.plus": "Add 1 (Shift: a full stack, Ctrl: custom amount)",
+  "shopping-materialist.gui.shopping_list_editor.minus": "Remove 1 (Shift: a full stack, Ctrl: custom amount)",
+  "shopping-materialist.gui.shopping_list_editor.remove": "Remove from the list",
+  "shopping-materialist.gui.shopping_list_editor.ctrl_amount": "Ctrl amount:",
+
+  "shopping-materialist.config.generic.name.ctrlClickAmount": "ctrlClickAmount",
+  "shopping-materialist.config.generic.comment.ctrlClickAmount": "How many items Ctrl+click adds or removes in the shopping list editor (2 - 256). In the editor, Ctrl + mouse wheel changes it.",
+
+  "shopping-materialist.config.hotkeys.name.openGuiConfigs": "openGuiConfigs",
+  "shopping-materialist.config.hotkeys.comment.openGuiConfigs": "Open the Shopping Materialist config GUI",
+  "shopping-materialist.config.hotkeys.name.openGuiShoppingList": "openGuiShoppingList",
+  "shopping-materialist.config.hotkeys.comment.openGuiShoppingList": "Open the Shopping Lists screen directly"
+}

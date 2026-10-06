@@ -1,31 +1,28 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "shopping-materialist",
 	"version": "${version}",
-	"name": "Example Mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Shopping Materialist",
+	"description": "Shopping lists for Litematica: build your own material lists by picking items, or turn any Litematica material list into an editable shopping list.",
 	"authors": [
-		"Me!"
+		"MGThorn"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/MGThorn/shopping-materialist",
+		"sources": "https://github.com/MGThorn/shopping-materialist",
+		"issues": "https://github.com/MGThorn/shopping-materialist/issues"
 	},
-	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
+	"license": "LGPL-3.0-only",
+	"icon": "assets/shopping-materialist/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"main": [
-			"com.example.ExampleMod"
-		],
 		"client": [
-			"com.example.client.ExampleModClient"
+			"io.github.mgthorn.shoppingmaterialist.client.ShoppingMaterialistClient"
 		]
 	},
 	"mixins": [
-		"modid.mixins.json",
 		{
-			"config": "modid.client.mixins.json",
+			"config": "shopping-materialist.client.mixins.json",
 			"environment": "client"
 		}
 	],
@@ -33,6 +30,10 @@
 		"fabricloader": ">=0.19.5",
 		"minecraft": "~1.21.11",
 		"java": ">=21",
-		"fabric-api": "*"
+		"fabric-api": "*",
+		"malilib": ">=0.27.20",
+		"litematica": ">=0.26.16",
+		"minihud": ">=0.38.16",
+		"tweakeroo": ">=0.27.15"
 	}
 }
