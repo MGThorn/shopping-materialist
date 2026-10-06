@@ -1,4 +1,4 @@
-package com.example.client.mixin;
+package io.github.mgthorn.shoppingmaterialist.client.mixin;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,12 +12,12 @@ import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.litematica.gui.GuiMaterialList;
 import fi.dy.masa.litematica.materials.MaterialListBase;
-import com.example.Reference;
-import com.example.client.gui.GuiShoppingListEditor;
-import com.example.client.shoppinglist.MaterialListConverter;
-import com.example.client.shoppinglist.ShoppingList;
-import com.example.client.shoppinglist.ShoppingListManager;
-import com.example.client.shoppinglist.ShoppingMaterialList;
+import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.gui.GuiShoppingListEditor;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.MaterialListConverter;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingListManager;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingMaterialList;
 
 /**
  * Adds an "Edit items" button to Litematica's material list GUI.

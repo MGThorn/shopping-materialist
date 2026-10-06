@@ -1,9 +1,9 @@
-package com.example.client.config;
+package io.github.mgthorn.shoppingmaterialist.client.config;
 
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import fi.dy.masa.malilib.config.options.ConfigHotkey;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 public class Hotkeys {
 	private static final String HOTKEYS_KEY = Reference.MOD_ID + ".config.hotkeys";

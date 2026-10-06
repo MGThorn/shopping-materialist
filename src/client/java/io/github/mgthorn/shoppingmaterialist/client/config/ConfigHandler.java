@@ -1,4 +1,4 @@
-package com.example.client.config;
+package io.github.mgthorn.shoppingmaterialist.client.config;
 
 import java.nio.file.Path;
 import com.google.gson.JsonElement;
@@ -7,7 +7,7 @@ import fi.dy.masa.malilib.config.ConfigUtils;
 import fi.dy.masa.malilib.config.IConfigHandler;
 import fi.dy.masa.malilib.util.FileUtils;
 import fi.dy.masa.malilib.util.data.json.JsonUtils;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 public class ConfigHandler implements IConfigHandler {
 	private static final String CONFIG_FILE_NAME = Reference.MOD_ID + ".json";

@@ -1,4 +1,4 @@
-package com.example.client.mixin;
+package io.github.mgthorn.shoppingmaterialist.client.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;

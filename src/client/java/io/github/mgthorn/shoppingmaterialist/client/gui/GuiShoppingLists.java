@@ -1,4 +1,4 @@
-package com.example.client.gui;
+package io.github.mgthorn.shoppingmaterialist.client.gui;
 
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
@@ -16,10 +16,10 @@ import fi.dy.masa.malilib.render.RenderUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.gui.GuiMaterialList;
-import com.example.Reference;
-import com.example.client.shoppinglist.ShoppingList;
-import com.example.client.shoppinglist.ShoppingListManager;
-import com.example.client.shoppinglist.ShoppingMaterialList;
+import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingListManager;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingMaterialList;
 
 /**
  * Lists all shopping lists, and lets the user create, open, edit, rename and delete them.

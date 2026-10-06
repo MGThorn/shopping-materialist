@@ -1,4 +1,4 @@
-package com.example.client.shoppinglist;
+package io.github.mgthorn.shoppingmaterialist.client.shoppinglist;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +9,7 @@ import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.malilib.util.data.ItemType;
 import fi.dy.masa.litematica.materials.MaterialListBase;
 import fi.dy.masa.litematica.materials.MaterialListUtils;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 /**
  * Exposes a {@link ShoppingList} as a Litematica material list, so it can be shown

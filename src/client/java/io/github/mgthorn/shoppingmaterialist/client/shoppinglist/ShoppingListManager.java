@@ -1,4 +1,4 @@
-package com.example.client.shoppinglist;
+package io.github.mgthorn.shoppingmaterialist.client.shoppinglist;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,8 +13,8 @@ import com.google.gson.JsonElement;
 import fi.dy.masa.malilib.util.FileUtils;
 import fi.dy.masa.malilib.util.data.json.JsonUtils;
 import fi.dy.masa.litematica.data.DataManager;
-import com.example.ExampleMod;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.ShoppingMaterialist;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 /**
  * Holds all shopping lists. Each list is stored in its own file in
@@ -101,7 +101,7 @@ public class ShoppingListManager {
 			Files.deleteIfExists(this.getDirectory().resolve(list.getFileName()));
 		}
 		catch (IOException e) {
-			ExampleMod.LOGGER.error("Failed to delete shopping list file '{}'", list.getFileName(), e);
+			ShoppingMaterialist.LOGGER.error("Failed to delete shopping list file '{}'", list.getFileName(), e);
 		}
 	}
 
@@ -110,7 +110,7 @@ public class ShoppingListManager {
 			Files.createDirectories(this.getDirectory());
 		}
 		catch (IOException e) {
-			ExampleMod.LOGGER.error("Failed to create the shopping list directory", e);
+			ShoppingMaterialist.LOGGER.error("Failed to create the shopping list directory", e);
 			return;
 		}
 
@@ -140,12 +140,12 @@ public class ShoppingListManager {
 					this.lists.add(ShoppingList.fromJson(element.getAsJsonObject(), file.getFileName().toString()));
 				}
 				else {
-					ExampleMod.LOGGER.warn("Skipping invalid shopping list file '{}'", file);
+					ShoppingMaterialist.LOGGER.warn("Skipping invalid shopping list file '{}'", file);
 				}
 			});
 		}
 		catch (IOException e) {
-			ExampleMod.LOGGER.error("Failed to read the shopping list directory", e);
+			ShoppingMaterialist.LOGGER.error("Failed to read the shopping list directory", e);
 		}
 
 		this.sort();

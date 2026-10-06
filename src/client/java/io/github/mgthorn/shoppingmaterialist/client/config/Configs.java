@@ -1,10 +1,10 @@
-package com.example.client.config;
+package io.github.mgthorn.shoppingmaterialist.client.config;
 
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import fi.dy.masa.malilib.config.IConfigBase;
 import fi.dy.masa.malilib.config.options.ConfigInteger;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 public class Configs {
 	public static class Generic {

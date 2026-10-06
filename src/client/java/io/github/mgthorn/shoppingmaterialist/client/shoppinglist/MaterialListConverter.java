@@ -1,4 +1,4 @@
-package com.example.client.shoppinglist;
+package io.github.mgthorn.shoppingmaterialist.client.shoppinglist;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -8,7 +8,7 @@ import net.minecraft.world.item.Items;
 import fi.dy.masa.litematica.materials.MaterialListAreaAnalyzer;
 import fi.dy.masa.litematica.materials.MaterialListBase;
 import fi.dy.masa.litematica.materials.MaterialListEntry;
-import com.example.client.mixin.MaterialListAreaAnalyzerAccessor;
+import io.github.mgthorn.shoppingmaterialist.client.mixin.MaterialListAreaAnalyzerAccessor;
 
 /**
  * Turns any Litematica material list (placement, schematic, area analysis...) into a shopping list.

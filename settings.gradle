@@ -9,5 +9,5 @@ pluginManagement {
 	}
 }
 
-// Should match your shopping-materialist
+// Should match the mod id
 rootProject.name = 'shopping-materialist'

@@ -1,4 +1,4 @@
-package com.example.client.gui;
+package io.github.mgthorn.shoppingmaterialist.client.gui;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,9 +8,9 @@ import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiConfigsBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.StringUtils;
-import com.example.Reference;
-import com.example.client.config.Configs;
-import com.example.client.config.Hotkeys;
+import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.config.Configs;
+import io.github.mgthorn.shoppingmaterialist.client.config.Hotkeys;
 
 public class GuiConfigs extends GuiConfigsBase {
 	// Static so the last selected tab is remembered when the GUI is reopened

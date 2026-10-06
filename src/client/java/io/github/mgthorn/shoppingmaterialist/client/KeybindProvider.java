@@ -1,10 +1,10 @@
-package com.example.client;
+package io.github.mgthorn.shoppingmaterialist.client;
 
 import fi.dy.masa.malilib.config.options.ConfigHotkey;
 import fi.dy.masa.malilib.hotkeys.IKeybindManager;
 import fi.dy.masa.malilib.hotkeys.IKeybindProvider;
-import com.example.Reference;
-import com.example.client.config.Hotkeys;
+import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.config.Hotkeys;
 
 public class KeybindProvider implements IKeybindProvider {
 	@Override

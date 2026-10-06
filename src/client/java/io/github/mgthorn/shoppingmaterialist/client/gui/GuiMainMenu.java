@@ -1,9 +1,9 @@
-package com.example.client.gui;
+package io.github.mgthorn.shoppingmaterialist.client.gui;
 
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.util.StringUtils;
-import com.example.Reference;
+import io.github.mgthorn.shoppingmaterialist.Reference;
 
 public class GuiMainMenu extends GuiBase {
 	public GuiMainMenu() {

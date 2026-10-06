@@ -1,4 +1,4 @@
-package com.example.client.shoppinglist;
+package io.github.mgthorn.shoppingmaterialist.client.shoppinglist;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

@@ -1,4 +1,4 @@
-package com.example.client.gui;
+package io.github.mgthorn.shoppingmaterialist.client.gui;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +24,9 @@ import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.render.RenderUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.malilib.util.input.ScanCodes;
-import com.example.Reference;
-import com.example.client.config.Configs;
-import com.example.client.shoppinglist.ShoppingList;
+import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.config.Configs;
+import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
 
 /**
  * Item picker for a shopping list: a searchable grid of all items on the left,
