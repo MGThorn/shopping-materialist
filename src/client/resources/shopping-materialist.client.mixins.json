@@ -4,7 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"MaterialListAreaAnalyzerAccessor",
-		"MixinGuiMaterialList"
+		"MixinGuiMaterialList",
+		"MixinMerchantScreen"
 	],
 	"injectors": {
 		"defaultRequire": 1

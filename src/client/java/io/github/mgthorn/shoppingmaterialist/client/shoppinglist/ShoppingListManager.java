@@ -71,6 +71,28 @@ public class ShoppingListManager {
 	}
 
 	/**
+	 * Creates a list named {@code name}, or {@code name_2}, {@code name_3}... if that name is taken
+	 */
+	public ShoppingList createNumbered(String name) {
+		String numberedName = name;
+		int i = 2;
+
+		while (this.getByName(numberedName) != null) {
+			numberedName = name + "_" + i++;
+		}
+
+		return this.create(numberedName);
+	}
+
+	/**
+	 * Returns the list with this name, creating it if it doesn't exist yet
+	 */
+	public ShoppingList getOrCreate(String name) {
+		ShoppingList list = this.getByName(name);
+		return list != null ? list : this.create(name);
+	}
+
+	/**
 	 * @return false if another list already uses the new name
 	 */
 	public boolean rename(ShoppingList list, String newName) {
