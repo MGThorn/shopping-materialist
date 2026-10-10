@@ -3,6 +3,9 @@ plugins {
 	id 'maven-publish'
 }
 
+// Minecraft version first, then the mod version, e.g. 1.21.11-1.0.0
+version = "${project.minecraft_version}-${project.mod_version}"
+
 repositories {
 	maven {
 		url = "https://masa.dy.fi/maven/sakura-ryoko"

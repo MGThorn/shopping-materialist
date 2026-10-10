@@ -15,7 +15,7 @@ public class Configs {
 		public static final ConfigInteger CTRL_CLICK_AMOUNT = new ConfigInteger("ctrlClickAmount", 8, 2, 256, true).apply(GENERIC_KEY);
 
 		// Adds a button to the wandering trader's trading screen that creates a shopping list from its trades
-		public static final ConfigBoolean WANDERING_TRADER_BUTTON = new ConfigBoolean("wanderingTraderButton", false).apply(GENERIC_KEY);
+		public static final ConfigBoolean WANDERING_TRADER_BUTTON = new ConfigBoolean("wanderingTraderButton", true).apply(GENERIC_KEY);
 
 		// The same button for villagers
 		public static final ConfigBoolean VILLAGER_BUTTON = new ConfigBoolean("villagerButton", false).apply(GENERIC_KEY);
