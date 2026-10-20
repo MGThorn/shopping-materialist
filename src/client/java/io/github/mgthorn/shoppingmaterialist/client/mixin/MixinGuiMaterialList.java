@@ -13,6 +13,7 @@ import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.litematica.gui.GuiMaterialList;
 import fi.dy.masa.litematica.materials.MaterialListBase;
 import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.config.Configs;
 import io.github.mgthorn.shoppingmaterialist.client.gui.GuiShoppingListEditor;
 import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.MaterialListConverter;
 import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
@@ -22,7 +23,8 @@ import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingMateria
 /**
  * Adds an "Edit items" button to Litematica's material list GUI.
  * For a shopping list it opens the editor; for any other material list
- * (placement, schematic, area analysis...) it first creates a shopping list from it.
+ * (placement, schematic, area analysis...) it first creates a shopping list from it,
+ * or a new numbered one if materialListNewList is enabled.
  */
 @Mixin(GuiMaterialList.class)
 public abstract class MixinGuiMaterialList {
@@ -52,16 +54,23 @@ public abstract class MixinGuiMaterialList {
 	private void shoppingMaterialist$createShoppingList(GuiBase gui) {
 		ShoppingListManager manager = ShoppingListManager.getInstance();
 		String name = MaterialListConverter.getShoppingListName(this.materialList);
-		ShoppingList list = manager.getByName(name);
+		ShoppingList list;
 
-		// Like removing a locked schematic placement: overwriting needs Shift
-		if (list != null && !GuiBase.isShiftDown()) {
-			gui.addMessage(MessageType.WARNING, Reference.MOD_ID + ".message.shopping_list_exists", list.getName());
-			return;
+		if (Configs.Generic.MATERIAL_LIST_NEW_LIST.getBooleanValue()) {
+			list = manager.createNumbered(name);
 		}
+		else {
+			list = manager.getByName(name);
 
-		if (list == null) {
-			list = manager.create(name);
+			// Like removing a locked schematic placement: overwriting needs Shift
+			if (list != null && !GuiBase.isShiftDown()) {
+				gui.addMessage(MessageType.WARNING, Reference.MOD_ID + ".message.shopping_list_exists", list.getName());
+				return;
+			}
+
+			if (list == null) {
+				list = manager.create(name);
+			}
 		}
 
 		list.setItems(MaterialListConverter.getItems(this.materialList));
