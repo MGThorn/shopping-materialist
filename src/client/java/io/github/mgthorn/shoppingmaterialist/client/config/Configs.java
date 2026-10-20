@@ -25,13 +25,17 @@ public class Configs {
 		public static final ConfigBoolean VILLAGER_NEW_LIST = new ConfigBoolean("villagerNewList", false).apply(GENERIC_KEY);
 		public static final ConfigBoolean MATERIAL_LIST_NEW_LIST = new ConfigBoolean("materialListNewList", false).apply(GENERIC_KEY);
 
+		// Saves every villager and wandering trader whose trading screen was opened, for the trading lists
+		public static final ConfigBoolean REMEMBER_VILLAGERS = new ConfigBoolean("rememberVillagers", true).apply(GENERIC_KEY);
+
 		public static final List<IConfigBase> OPTIONS = ImmutableList.of(
 				CTRL_CLICK_AMOUNT,
 				WANDERING_TRADER_BUTTON,
 				VILLAGER_BUTTON,
 				WANDERING_TRADER_NEW_LIST,
 				VILLAGER_NEW_LIST,
-				MATERIAL_LIST_NEW_LIST
+				MATERIAL_LIST_NEW_LIST,
+				REMEMBER_VILLAGERS
 		);
 	}
 }

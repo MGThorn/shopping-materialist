@@ -49,6 +49,11 @@ public class GuiConfigs extends GuiConfigsBase {
 				return;
 			}
 
+			if (guiTab == ConfigGuiTab.TRADING_LIST) {
+				GuiBase.openGui(new GuiTradingList(this));
+				return;
+			}
+
 			tab = guiTab;
 			this.clearElements();
 			this.reCreateListWidget();
@@ -67,7 +72,7 @@ public class GuiConfigs extends GuiConfigsBase {
 				configs.addAll(ConfigOptionWrapper.createFor(Configs.Generic.OPTIONS));
 				configs.addAll(ConfigOptionWrapper.createFor(Hotkeys.HOTKEY_LIST));
 			}
-			case SHOPPING_LIST -> {
+			case SHOPPING_LIST, TRADING_LIST -> {
 			}
 		}
 
@@ -77,7 +82,8 @@ public class GuiConfigs extends GuiConfigsBase {
 	public enum ConfigGuiTab {
 		ALL("all"),
 		GENERIC("generic"),
-		SHOPPING_LIST("shopping_list");
+		SHOPPING_LIST("shopping_list"),
+		TRADING_LIST("trading_list");
 
 		private final String translationKey;
 

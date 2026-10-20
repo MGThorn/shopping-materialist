@@ -25,6 +25,20 @@ A shopping list works like a Litematica material list, but you build it by picki
 - **Villager shopping list** (off by default, enable `villagerButton`): the same button for villagers, filling the `Villager` list. The villager's current prices are used, so discounts and price increases are included.
 - By default both buttons overwrite their list. Enable `wanderingTraderNewList` / `villagerNewList` to create a new numbered list each time instead (`Villager`, `Villager_2`, `Villager_3`...).
 
+### Trading lists
+
+Plan the gear you want to trade for, and the mod works out what it costs:
+
+- **Setups:** a setup is a list of items with the enchantments you want on them. The default setup is full diamond armor, a sword, a Silk Touch and a Fortune pickaxe, an axe, a shovel and a Silk Touch and a Fortune hoe, all with the best enchantments villagers sell. Add, remove and edit items, and save as many setups as you like.
+- **Item source:** each item is either **crafted** (adds diamonds and sticks), **bought** from the cheapest remembered smith (its random enchantments are used if they help), or one you **have** already.
+- **Villager memory:** every villager and wandering trader whose trading screen you open is remembered per world (server address or save name), with its trades, profession, level and position. Turn this off with `rememberVillagers`.
+- **Calculation:** for every book the cheapest remembered librarian is picked (the nearer one if prices are equal). Books no remembered villager sells are shown in red with the vanilla price range. The result shows the emeralds, everything to bring, the villagers to visit with their coordinates, and the anvil order that costs the fewest levels, with a warning for steps of 40 levels or more ("Too Expensive!").
+- **Export:** puts everything to bring into the shopping list `Trading: <setup>` and opens it, so it shows in Litematica's info HUD.
+- **Coordinates to chat:** writes the villagers to visit into your own chat. Click a line to copy its coordinates.
+- **Villager browser:** lists the remembered villagers of the world with their trades. Delete villagers that died or moved.
+
+Prices and positions are the ones from the last time you opened a villager's trading screen. Open it again to update them.
+
 ## Hotkeys
 
 | Hotkey | Default |
@@ -32,8 +46,9 @@ A shopping list works like a Litematica material list, but you build it by picki
 | Open the main menu | A + C |
 | Open the config screen | not set |
 | Open the shopping list browser | not set |
+| Open the trading lists | not set |
 
-You can change the last two in the config screen. The mod also appears in MaLiLib's mod dropdown.
+You can change all but the first in the config screen. The mod also appears in MaLiLib's mod dropdown.
 
 ## Storage
 
@@ -41,8 +56,10 @@ Everything is stored on your own computer, including when you play on a server:
 
 - Settings: `config/shopping-materialist.json`
 - Lists: `config/shopping-materialist/shopping_lists/*.json`
+- Trading setups: `config/shopping-materialist/trading_setups.json`
+- Remembered villagers: `config/shopping-materialist/villagers/<world>.json`, one file per server or singleplayer world
 
-The same lists are available in every world and on every server.
+The same lists and setups are available in every world and on every server.
 
 ## Requirements
 

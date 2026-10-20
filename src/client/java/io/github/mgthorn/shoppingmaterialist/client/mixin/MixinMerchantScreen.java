@@ -1,7 +1,9 @@
 package io.github.mgthorn.shoppingmaterialist.client.mixin;
 
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -27,11 +29,15 @@ import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.MerchantOfferCo
 import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
 import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingListManager;
 import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingMaterialList;
+import io.github.mgthorn.shoppingmaterialist.client.trading.VillagerMemory;
 
 /**
  * Adds a "Shopping list" button to the wandering trader's and the villagers' trading screen (if enabled in the configs).
  * It fills the "Wandering Trader" or "Villager" shopping list (or a new numbered one, see the *NewList configs) with everything needed for all of the merchant's trades,
  * and shows that list in Litematica's info HUD.
+ * <p>
+ * When the screen closes, the merchant and its trades are saved to the {@link VillagerMemory} (if enabled),
+ * for the trading lists.
  */
 @Mixin(MerchantScreen.class)
 public abstract class MixinMerchantScreen extends AbstractContainerScreen<MerchantMenu> {
@@ -39,10 +45,18 @@ public abstract class MixinMerchantScreen extends AbstractContainerScreen<Mercha
 		super(menu, inventory, title);
 	}
 
+	// The merchant this screen belongs to, found once when the screen opens
+	@Unique @Nullable private Entity shoppingMaterialist$merchant;
+
 	@Inject(method = "init", at = @At("TAIL"))
 	private void shoppingMaterialist$addShoppingListButton(CallbackInfo ci) {
-		// The trading screen is opened by right-clicking the merchant, so it is the entity under the crosshair
-		Entity merchant = Minecraft.getInstance().crosshairPickEntity;
+		// The trading screen is opened by right-clicking the merchant, so it is the entity under the crosshair.
+		// init also runs when the window is resized, so only look it up the first time.
+		if (this.shoppingMaterialist$merchant == null) {
+			this.shoppingMaterialist$merchant = Minecraft.getInstance().crosshairPickEntity;
+		}
+
+		Entity merchant = this.shoppingMaterialist$merchant;
 		ConfigBoolean newListOption;
 		String nameKey;
 
@@ -91,6 +105,16 @@ public abstract class MixinMerchantScreen extends AbstractContainerScreen<Mercha
 		if (this.minecraft != null && this.minecraft.player != null) {
 			this.minecraft.player.sendOverlayMessage(Component.translatable(Reference.MOD_ID + ".message.merchant_list",
 					list.getName(), items.size(), list.getTotalCount()));
+		}
+	}
+
+	// The offers arrive in a packet after init, and their uses go up while trading, so they are saved on close
+	@Override
+	public void removed() {
+		super.removed();
+
+		if (Configs.Generic.REMEMBER_VILLAGERS.getBooleanValue() && this.shoppingMaterialist$merchant != null) {
+			VillagerMemory.getInstance().record(this.shoppingMaterialist$merchant, this.menu.getOffers(), this.menu.getTraderLevel());
 		}
 	}
 }
