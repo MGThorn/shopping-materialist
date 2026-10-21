@@ -54,6 +54,11 @@ public class GuiConfigs extends GuiConfigsBase {
 				return;
 			}
 
+			if (guiTab == ConfigGuiTab.VILLAGER_LIST) {
+				GuiBase.openGui(new GuiVillagerBrowser(this));
+				return;
+			}
+
 			tab = guiTab;
 			this.clearElements();
 			this.reCreateListWidget();
@@ -72,7 +77,7 @@ public class GuiConfigs extends GuiConfigsBase {
 				configs.addAll(ConfigOptionWrapper.createFor(Configs.Generic.OPTIONS));
 				configs.addAll(ConfigOptionWrapper.createFor(Hotkeys.HOTKEY_LIST));
 			}
-			case SHOPPING_LIST, TRADING_LIST -> {
+			case SHOPPING_LIST, TRADING_LIST, VILLAGER_LIST -> {
 			}
 		}
 
@@ -83,7 +88,8 @@ public class GuiConfigs extends GuiConfigsBase {
 		ALL("all"),
 		GENERIC("generic"),
 		SHOPPING_LIST("shopping_list"),
-		TRADING_LIST("trading_list");
+		TRADING_LIST("trading_list"),
+		VILLAGER_LIST("villager_list");
 
 		private final String translationKey;
 

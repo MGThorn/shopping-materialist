@@ -124,6 +124,13 @@ public class TradingCalculator {
 	}
 
 	/**
+	 * An enchantment no remembered villager sells (not even at a lower level)
+	 * @param excluded left out of the calculation, see {@link TradingSetupManager#isExcluded}
+	 */
+	public record MissingEnchantment(String id, int level, boolean excluded) {
+	}
+
+	/**
 	 * A villager to visit and what to buy there
 	 */
 	public static class Visit {
@@ -145,6 +152,8 @@ public class TradingCalculator {
 		public int estimateMax;
 		// Books and bought items no remembered villager sells
 		public int missingTrades;
+		// Every wanted enchantment no remembered villager sells, including the excluded ones
+		public final Map<String, MissingEnchantment> missingEnchantments = new LinkedHashMap<>();
 		public int totalLevels;
 		public boolean tooExpensive;
 
@@ -171,6 +180,18 @@ public class TradingCalculator {
 		PieceResult pr = new PieceResult(piece);
 		ItemStack stack = piece.getStack();
 		Map<String, Integer> wanted = getValidEnchantments(piece, stack, pr.warnings);
+
+		// Enchantments no remembered villager sells are listed as missing; excluded ones are left out of everything
+		wanted.entrySet().removeIf(entry -> {
+			if (findBook(entry.getKey(), entry.getValue(), villagers).purchase != null) {
+				return false;
+			}
+
+			boolean excluded = TradingSetupManager.getInstance().isExcluded(entry.getKey());
+			result.missingEnchantments.putIfAbsent(entry.getKey() + " " + entry.getValue(),
+					new MissingEnchantment(entry.getKey(), entry.getValue(), excluded));
+			return excluded;
+		});
 
 		switch (piece.getSource()) {
 			case CRAFT -> {

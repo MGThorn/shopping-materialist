@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -23,6 +25,8 @@ public class TradingSetupManager {
 	private static final TradingSetupManager INSTANCE = new TradingSetupManager();
 
 	private final List<TradingSetup> setups = new ArrayList<>();
+	// Enchantments (by id) left out of the calculation while no remembered villager sells them
+	private final Set<String> excludedEnchantments = new LinkedHashSet<>();
 	private int selected;
 	private boolean loaded;
 
@@ -51,6 +55,21 @@ public class TradingSetupManager {
 	public void select(int offset) {
 		this.ensureLoaded();
 		this.selected = Math.floorMod(this.selected + offset, this.setups.size());
+		this.save();
+	}
+
+	public boolean isExcluded(String enchantmentId) {
+		this.ensureLoaded();
+		return this.excludedEnchantments.contains(enchantmentId);
+	}
+
+	public void toggleExcluded(String enchantmentId) {
+		this.ensureLoaded();
+
+		if (!this.excludedEnchantments.remove(enchantmentId)) {
+			this.excludedEnchantments.add(enchantmentId);
+		}
+
 		this.save();
 	}
 
@@ -130,6 +149,10 @@ public class TradingSetupManager {
 		}
 
 		this.selected = root.has("selected") ? root.get("selected").getAsInt() : 0;
+
+		if (root.has("excludedEnchantments") && root.get("excludedEnchantments").isJsonArray()) {
+			root.getAsJsonArray("excludedEnchantments").forEach(id -> this.excludedEnchantments.add(id.getAsString()));
+		}
 	}
 
 	public void save() {
@@ -148,6 +171,10 @@ public class TradingSetupManager {
 		this.setups.forEach(setup -> array.add(setup.toJson()));
 		root.add("setups", array);
 		root.addProperty("selected", this.selected);
+
+		JsonArray excluded = new JsonArray();
+		this.excludedEnchantments.forEach(excluded::add);
+		root.add("excludedEnchantments", excluded);
 		JsonUtils.writeJsonToFile(root, this.getFile());
 	}
 }

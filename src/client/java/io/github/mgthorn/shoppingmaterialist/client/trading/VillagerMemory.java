@@ -58,10 +58,12 @@ public class VillagerMemory {
 	public void record(Entity merchant, MerchantOffers offers, int level) {
 		String type;
 		String profession = "";
+		String villagerType = "minecraft:plains";
 
 		if (merchant instanceof Villager villager) {
 			type = RememberedVillager.TYPE_VILLAGER;
 			profession = villager.getVillagerData().profession().unwrapKey().map(key -> key.identifier().toString()).orElse("");
+			villagerType = villager.getVillagerData().type().unwrapKey().map(key -> key.identifier().toString()).orElse(villagerType);
 		}
 		else if (merchant instanceof WanderingTrader) {
 			type = RememberedVillager.TYPE_WANDERING_TRADER;
@@ -82,8 +84,10 @@ public class VillagerMemory {
 			remembered.add(RememberedOffer.of(offer));
 		}
 
-		this.villagers.put(merchant.getUUID(), new RememberedVillager(merchant.getUUID(), type, profession, level,
-				dimension, merchant.blockPosition(), System.currentTimeMillis(), remembered));
+		RememberedVillager villager = new RememberedVillager(merchant.getUUID(), type, profession, level,
+				dimension, merchant.blockPosition(), System.currentTimeMillis(), remembered);
+		villager.villagerType = villagerType;
+		this.villagers.put(merchant.getUUID(), villager);
 		this.save();
 	}
 

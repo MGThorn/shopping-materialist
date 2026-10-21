@@ -16,6 +16,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
@@ -56,43 +57,20 @@ public class Enchants {
 	}
 
 	/**
-	 * The name cut to at most 4 letters, plus the level: "Effi V", "Mend", "FiAs II" (Fire Aspect), "CuVa" (Curse of Vanishing).
-	 * One word: its first 4 letters. Several words: the first 2 letters of the first two words, skipping "of".
+	 * An enchanted book storing this enchantment, or a plain enchanted book if it doesn't exist in this world.
+	 * Item model definitions can pick a texture by the stored enchantment, so resource packs can show one icon per enchantment.
 	 */
-	public static String getShortName(String id, int level) {
+	public static ItemStack createBook(String id, int level) {
+		ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
 		Holder<Enchantment> holder = get(id);
 
-		if (holder == null) {
-			return getName(id, level);
+		if (holder != null) {
+			ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+			enchantments.set(holder, level);
+			book.set(DataComponents.STORED_ENCHANTMENTS, enchantments.toImmutable());
 		}
 
-		String name = holder.value().description().getString();
-		String full = Enchantment.getFullname(holder, level).getString();
-		// The level part, e.g. " V" (empty for enchantments with only one level)
-		String levelText = full.startsWith(name) ? full.substring(name.length()) : "";
-
-		List<String> words = new ArrayList<>();
-
-		for (String word : name.split("\\s+")) {
-			if (!word.isEmpty() && !word.equalsIgnoreCase("of")) {
-				words.add(word);
-			}
-		}
-
-		String shortName;
-
-		if (words.size() >= 2) {
-			shortName = prefix(words.get(0), 2) + prefix(words.get(1), 2);
-		}
-		else {
-			shortName = prefix(name, 4);
-		}
-
-		return shortName + levelText;
-	}
-
-	private static String prefix(String text, int length) {
-		return text.substring(0, Math.min(length, text.length()));
+		return book;
 	}
 
 	public static int getMaxLevel(String id) {

@@ -13,6 +13,7 @@ import io.github.mgthorn.shoppingmaterialist.client.gui.GuiConfigs;
 import io.github.mgthorn.shoppingmaterialist.client.gui.GuiMainMenu;
 import io.github.mgthorn.shoppingmaterialist.client.gui.GuiShoppingLists;
 import io.github.mgthorn.shoppingmaterialist.client.gui.GuiTradingList;
+import io.github.mgthorn.shoppingmaterialist.client.gui.GuiVillagerBrowser;
 
 public class InitHandler implements IInitializationHandler {
 	@Override
@@ -43,6 +44,11 @@ public class InitHandler implements IInitializationHandler {
 
 		Hotkeys.OPEN_GUI_TRADING_LIST.getKeybind().setCallback((action, key) -> {
 			GuiBase.openGui(new GuiTradingList(null));
+			return true;
+		});
+
+		Hotkeys.OPEN_GUI_VILLAGERS.getKeybind().setCallback((action, key) -> {
+			GuiBase.openGui(new GuiVillagerBrowser(null));
 			return true;
 		});
 	}

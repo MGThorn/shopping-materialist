@@ -18,6 +18,9 @@
 	"entrypoints": {
 		"client": [
 			"io.github.mgthorn.shoppingmaterialist.client.ShoppingMaterialistClient"
+		],
+		"journeymap": [
+			"io.github.mgthorn.shoppingmaterialist.client.compat.journeymap.ShoppingMaterialistJourneyMapPlugin"
 		]
 	},
 	"mixins": [
@@ -35,5 +38,8 @@
 		"litematica": ">=0.29.1",
 		"minihud": ">=0.41.2",
 		"tweakeroo": ">=0.30.1"
+	},
+	"suggests": {
+		"journeymap": "*"
 	}
 }

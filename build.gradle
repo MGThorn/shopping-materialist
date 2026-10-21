@@ -16,6 +16,56 @@ repositories {
 		url = "https://maven.fallenbreath.me/releases"
 		content { includeGroupAndSubgroups("me.fallenbreath") }
 	}
+	// JourneyMap (optional), only published on Modrinth's maven
+	maven {
+		url = "https://api.modrinth.com/maven"
+		content { includeGroup("maven.modrinth") }
+	}
+}
+
+configurations {
+	// The JourneyMap mod jar, only used to take its API out
+	journeymapMod { transitive = false }
+}
+
+/**
+ * Copies a jar nested in a mod jar (META-INF/jars/) to its own file.
+ * JourneyMap only publishes the whole mod, with its API nested inside.
+ */
+abstract class ExtractNestedJar extends DefaultTask {
+	@InputFiles
+	abstract ConfigurableFileCollection getModJar()
+
+	@Input
+	abstract Property<String> getPrefix()
+
+	@OutputFile
+	abstract RegularFileProperty getOutput()
+
+	@TaskAction
+	void extract() {
+		def zip = new java.util.zip.ZipFile(modJar.singleFile)
+
+		try {
+			def entry = zip.entries().find { it.name.startsWith("META-INF/jars/" + prefix.get()) && it.name.endsWith(".jar") }
+
+			if (entry == null) {
+				throw new GradleException("No nested jar starting with " + prefix.get() + " in " + modJar.singleFile)
+			}
+
+			output.get().asFile.parentFile.mkdirs()
+			output.get().asFile.bytes = zip.getInputStream(entry).bytes
+		}
+		finally {
+			zip.close()
+		}
+	}
+}
+
+def extractJourneymapApi = tasks.register("extractJourneymapApi", ExtractNestedJar) {
+	modJar.from(configurations.journeymapMod)
+	prefix = "journeymap-api-"
+	output = layout.buildDirectory.file("journeymap-api/journeymap-api.jar")
 }
 
 loom {
@@ -42,6 +92,12 @@ dependencies {
 	implementation "fi.dy.masa.litematica:litematica-fabric-${project.minecraft_version}:${project.litematica_version}"
 	implementation "fi.dy.masa.minihud:minihud-fabric-${project.minecraft_version}:${project.minihud_version}"
 	implementation "fi.dy.masa.tweakeroo:tweakeroo-fabric-${project.minecraft_version}:${project.tweakeroo_version}"
+
+	// JourneyMap (optional): only its API is compiled against, the waypoint button checks at runtime whether it's installed
+	journeymapMod "maven.modrinth:journeymap:${project.journeymap_version}"
+	compileOnly files(extractJourneymapApi)
+	// Only in runClient, to test the waypoint button. Not a dependency of the built mod.
+	localRuntime "maven.modrinth:journeymap:${project.journeymap_version}"
 }
 
 processResources {

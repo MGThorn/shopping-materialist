@@ -22,6 +22,8 @@ public class GuiMainMenu extends GuiBase {
 		y += 22;
 		this.createButton(x, y, width, ButtonType.TRADING_LISTS);
 		y += 22;
+		this.createButton(x, y, width, ButtonType.VILLAGERS);
+		y += 22;
 		this.createButton(x, y, width, ButtonType.CONFIGURATION);
 	}
 
@@ -43,6 +45,7 @@ public class GuiMainMenu extends GuiBase {
 	private enum ButtonType {
 		SHOPPING_LISTS("shopping_lists"),
 		TRADING_LISTS("trading_lists"),
+		VILLAGERS("villagers"),
 		CONFIGURATION("configuration");
 
 		private final String translationKey;
@@ -59,6 +62,7 @@ public class GuiMainMenu extends GuiBase {
 			switch (this) {
 				case SHOPPING_LISTS -> GuiBase.openGui(new GuiShoppingLists(parent));
 				case TRADING_LISTS -> GuiBase.openGui(new GuiTradingList(parent));
+				case VILLAGERS -> GuiBase.openGui(new GuiVillagerBrowser(parent));
 				case CONFIGURATION -> GuiBase.openGui(new GuiConfigs(parent));
 			}
 		}

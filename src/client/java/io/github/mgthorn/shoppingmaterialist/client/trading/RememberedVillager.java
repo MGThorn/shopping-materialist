@@ -30,6 +30,8 @@ public class RememberedVillager {
 	public final BlockPos pos;
 	public final long lastSeen;
 	public final List<RememberedOffer> offers;
+	// The biome outfit, e.g. minecraft:desert (villagers saved before this was added are plains)
+	public String villagerType = "minecraft:plains";
 
 	public RememberedVillager(UUID uuid, String type, String profession, int level, String dimension, BlockPos pos,
 			long lastSeen, List<RememberedOffer> offers) {
@@ -91,6 +93,7 @@ public class RememberedVillager {
 		obj.addProperty("uuid", this.uuid.toString());
 		obj.addProperty("type", this.type);
 		obj.addProperty("profession", this.profession);
+		obj.addProperty("villagerType", this.villagerType);
 		obj.addProperty("level", this.level);
 		obj.addProperty("dimension", this.dimension);
 		obj.addProperty("x", this.pos.getX());
@@ -120,9 +123,15 @@ public class RememberedVillager {
 			}
 
 			BlockPos pos = new BlockPos(obj.get("x").getAsInt(), obj.get("y").getAsInt(), obj.get("z").getAsInt());
-			return new RememberedVillager(UUID.fromString(obj.get("uuid").getAsString()), obj.get("type").getAsString(),
+			RememberedVillager villager = new RememberedVillager(UUID.fromString(obj.get("uuid").getAsString()), obj.get("type").getAsString(),
 					obj.get("profession").getAsString(), obj.get("level").getAsInt(), obj.get("dimension").getAsString(),
 					pos, obj.get("lastSeen").getAsLong(), offers);
+
+			if (obj.has("villagerType")) {
+				villager.villagerType = obj.get("villagerType").getAsString();
+			}
+
+			return villager;
 		}
 		catch (RuntimeException e) {
 			return null;
