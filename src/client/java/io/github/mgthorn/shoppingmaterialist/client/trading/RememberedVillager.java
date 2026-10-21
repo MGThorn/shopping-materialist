@@ -20,6 +20,9 @@ import io.github.mgthorn.shoppingmaterialist.Reference;
 public class RememberedVillager {
 	public static final String TYPE_VILLAGER = "villager";
 	public static final String TYPE_WANDERING_TRADER = "wandering_trader";
+	// One Minecraft day, in ticks and in real time
+	private static final long RESTOCK_TICKS = 24000;
+	private static final long RESTOCK_MILLIS = 20 * 60 * 1000;
 
 	public final UUID uuid;
 	public final String type;
@@ -32,6 +35,8 @@ public class RememberedVillager {
 	public final List<RememberedOffer> offers;
 	// The biome outfit, e.g. minecraft:desert (villagers saved before this was added are plains)
 	public String villagerType = "minecraft:plains";
+	// The world's game time (ticks) when it was last seen, -1 for villagers saved before this was added
+	public long lastSeenGameTime = -1;
 
 	public RememberedVillager(UUID uuid, String type, String profession, int level, String dimension, BlockPos pos,
 			long lastSeen, List<RememberedOffer> offers) {
@@ -59,6 +64,25 @@ public class RememberedVillager {
 				: this.profession;
 
 		return StringUtils.translate(Reference.MOD_ID + ".gui.trading.villager_name", name, this.level);
+	}
+
+	/**
+	 * Whether the villager may have restocked its trades since it was last seen: one Minecraft day has passed
+	 * (villagers restock up to twice a day at their job block). Without a game time, 20 real minutes.
+	 * Wandering traders never restock.
+	 */
+	public boolean isMaybeRestocked() {
+		if (TYPE_WANDERING_TRADER.equals(this.type)) {
+			return false;
+		}
+
+		Minecraft mc = Minecraft.getInstance();
+
+		if (this.lastSeenGameTime >= 0 && mc.level != null) {
+			return mc.level.getGameTime() - this.lastSeenGameTime >= RESTOCK_TICKS;
+		}
+
+		return System.currentTimeMillis() - this.lastSeen >= RESTOCK_MILLIS;
 	}
 
 	public String getCoordinates() {
@@ -100,6 +124,7 @@ public class RememberedVillager {
 		obj.addProperty("y", this.pos.getY());
 		obj.addProperty("z", this.pos.getZ());
 		obj.addProperty("lastSeen", this.lastSeen);
+		obj.addProperty("lastSeenGameTime", this.lastSeenGameTime);
 
 		JsonArray offersArray = new JsonArray();
 		this.offers.forEach(offer -> offersArray.add(offer.toJson()));
@@ -129,6 +154,10 @@ public class RememberedVillager {
 
 			if (obj.has("villagerType")) {
 				villager.villagerType = obj.get("villagerType").getAsString();
+			}
+
+			if (obj.has("lastSeenGameTime")) {
+				villager.lastSeenGameTime = obj.get("lastSeenGameTime").getAsLong();
 			}
 
 			return villager;

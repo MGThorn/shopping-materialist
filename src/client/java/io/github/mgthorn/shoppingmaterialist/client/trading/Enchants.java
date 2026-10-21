@@ -25,6 +25,14 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
  * so everything is stored by id (e.g. {@code minecraft:sharpness}) and looked up when needed.
  */
 public class Enchants {
+	// The order of enchanted books in lists: most used first
+	private static final List<String> USAGE_ORDER = List.of(
+			"mending", "unbreaking", "efficiency", "protection", "sharpness", "fortune", "silk_touch", "feather_falling",
+			"looting", "power", "respiration", "aqua_affinity", "depth_strider", "infinity", "sweeping_edge", "fire_aspect",
+			"thorns", "projectile_protection", "blast_protection", "fire_protection", "knockback", "punch", "flame", "smite",
+			"bane_of_arthropods", "frost_walker", "luck_of_the_sea", "lure", "loyalty", "riptide", "channeling", "impaling",
+			"multishot", "piercing", "quick_charge", "density", "breach", "lunge", "wind_burst", "soul_speed", "swift_sneak");
+
 	@Nullable
 	public static Registry<Enchantment> getRegistry() {
 		Minecraft mc = Minecraft.getInstance();
@@ -118,6 +126,46 @@ public class Enchants {
 		}
 
 		return new int[] { Math.min(min, 64), Math.min(max, 64) };
+	}
+
+	/**
+	 * Sorts enchanted books by how much they are used: the {@link #USAGE_ORDER} list first, then other (modded)
+	 * enchantments by name, then the ones villagers don't sell, then curses. Levels of the same enchantment: highest first.
+	 */
+	public static int compareByUsage(String idA, int levelA, String idB, int levelB) {
+		if (idA.equals(idB)) {
+			return Integer.compare(levelB, levelA);
+		}
+
+		int result = Integer.compare(getUsageGroup(idA), getUsageGroup(idB));
+
+		if (result == 0) {
+			result = Integer.compare(getUsageRank(idA), getUsageRank(idB));
+		}
+
+		return result != 0 ? result : getName(idA, 1).compareTo(getName(idB, 1));
+	}
+
+	/**
+	 * 0: sold by villagers, 1: not sold by villagers (e.g. Soul Speed), 2: curses
+	 */
+	private static int getUsageGroup(String id) {
+		Holder<Enchantment> holder = get(id);
+
+		if (holder != null && holder.is(EnchantmentTags.CURSE)) {
+			return 2;
+		}
+
+		return holder != null && !holder.is(EnchantmentTags.TRADEABLE) ? 1 : 0;
+	}
+
+	/**
+	 * The position in {@link #USAGE_ORDER}, or after it for enchantments that aren't in it
+	 */
+	private static int getUsageRank(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		int index = identifier != null && identifier.getNamespace().equals("minecraft") ? USAGE_ORDER.indexOf(identifier.getPath()) : -1;
+		return index >= 0 ? index : USAGE_ORDER.size();
 	}
 
 	public static boolean isTradeable(String id) {

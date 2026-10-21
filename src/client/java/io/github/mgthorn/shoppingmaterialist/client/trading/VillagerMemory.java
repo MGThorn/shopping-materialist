@@ -87,6 +87,7 @@ public class VillagerMemory {
 		RememberedVillager villager = new RememberedVillager(merchant.getUUID(), type, profession, level,
 				dimension, merchant.blockPosition(), System.currentTimeMillis(), remembered);
 		villager.villagerType = villagerType;
+		villager.lastSeenGameTime = merchant.level().getGameTime();
 		this.villagers.put(merchant.getUUID(), villager);
 		this.save();
 	}
