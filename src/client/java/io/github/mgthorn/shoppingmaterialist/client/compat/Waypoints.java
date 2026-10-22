@@ -1,6 +1,8 @@
 package io.github.mgthorn.shoppingmaterialist.client.compat;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.resources.Identifier;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.Message.MessageType;
 import fi.dy.masa.malilib.util.StringUtils;
@@ -41,6 +43,13 @@ public class Waypoints {
 	}
 
 	/**
+	 * Wide enough for all its labels, so nothing next to it moves when it changes
+	 */
+	public static int getButtonWidth() {
+		return StringUtils.getMaxStringRenderWidth(getButtonLabels()) + 10;
+	}
+
+	/**
 	 * The waypoint button in the villager browser. Turning a waypoint on or off shows no message,
 	 * the button label shows the new state; only problems are shown in the open screen.
 	 */
@@ -53,6 +62,45 @@ public class Waypoints {
 		if (JourneyMapWaypoints.toggle(villager) == JourneyMapWaypoints.Result.NOT_READY) {
 			gui.addMessage(MessageType.WARNING, KEY + "not_ready");
 		}
+	}
+
+	/**
+	 * The chat button in the villager browser: closes the screen and opens the chat with the villager as a shared
+	 * Xaero's Minimap waypoint. The player sends it with Enter; Xaero's Minimap makes it clickable for everyone who has it.
+	 */
+	public static void onChatButton(RememberedVillager villager) {
+		GuiBase.openGui(new ChatScreen(getXaeroShareText(villager), false));
+	}
+
+	/**
+	 * The format of Xaero's Minimap's own "Share" button:
+	 * {@code xaero-waypoint:<name>:<initials>:<x>:<y>:<z>:<color>:<rotation>:<yaw>:Internal-<dimension>-waypoints},
+	 * e.g. "xaero-waypoint:Librarian (level 3):L:120:64:-300:10:false:0:Internal-overworld-waypoints".
+	 * Colons in the name are written as "^col^"; color 10 is green.
+	 */
+	public static String getXaeroShareText(RememberedVillager villager) {
+		String name = villager.getDisplayName().replace(":", "^col^");
+		String initials = name.isEmpty() ? "V" : name.substring(0, 1).toUpperCase();
+
+		return "xaero-waypoint:" + name + ":" + initials + ":" + villager.pos.getX() + ":" + villager.pos.getY() + ":" + villager.pos.getZ()
+				+ ":10:false:0:Internal-" + getXaeroDimension(villager.dimension) + "-waypoints";
+	}
+
+	/**
+	 * Xaero's folder name of a dimension: "overworld", "the_nether", "the_end", or "dim%namespace$path" for others
+	 */
+	private static String getXaeroDimension(String dimension) {
+		Identifier id = Identifier.tryParse(dimension);
+
+		if (id == null) {
+			return "overworld";
+		}
+
+		if (id.getNamespace().equals("minecraft") && (id.getPath().equals("overworld") || id.getPath().equals("the_nether") || id.getPath().equals("the_end"))) {
+			return id.getPath();
+		}
+
+		return "dim%" + id.getNamespace() + "$" + id.getPath().replace("/", "%");
 	}
 
 	/**

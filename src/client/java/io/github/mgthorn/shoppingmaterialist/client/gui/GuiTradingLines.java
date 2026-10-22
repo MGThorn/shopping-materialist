@@ -15,6 +15,7 @@ import fi.dy.masa.malilib.util.StringUtils;
 import io.github.mgthorn.shoppingmaterialist.Reference;
 import io.github.mgthorn.shoppingmaterialist.client.trading.Enchants;
 import io.github.mgthorn.shoppingmaterialist.client.trading.RememberedOffer;
+import io.github.mgthorn.shoppingmaterialist.client.trading.RememberedVillager;
 import io.github.mgthorn.shoppingmaterialist.client.trading.TradingCalculator.MissingEnchantment;
 
 /**
@@ -60,8 +61,12 @@ abstract class GuiTradingLines extends GuiBase {
 
 	/**
 	 * One cell of a two-column line
+	 * @param villager the villager the cell's trade comes from, null if none
 	 */
-	record Cell(Segs segs, @Nullable String tooltip) {
+	record Cell(Segs segs, @Nullable String tooltip, @Nullable RememberedVillager villager) {
+		Cell(Segs segs, @Nullable String tooltip) {
+			this(segs, tooltip, null);
+		}
 	}
 
 	/**
@@ -151,6 +156,13 @@ abstract class GuiTradingLines extends GuiBase {
 	protected abstract int getLinesWidth();
 
 	protected abstract int getLinesHeight();
+
+	/**
+	 * Space kept free at the right end of the left column of two-column lines, e.g. for buttons
+	 */
+	protected int getLeftColumnReserve() {
+		return 0;
+	}
 
 	/**
 	 * Whether an expandable line is expanded; shown as "-" or "+" in front of it
@@ -258,6 +270,30 @@ abstract class GuiTradingLines extends GuiBase {
 		return -1;
 	}
 
+	/**
+	 * @return the top of the line if it is shown at the current scroll position, or -1
+	 */
+	protected int getVisibleLineY(int index) {
+		int y = this.getLinesY();
+		int bottom = y + this.getLinesHeight();
+
+		for (int i = this.lineScroll; i < this.lines.size(); i++) {
+			int height = this.lines.get(i).height();
+
+			if (y + height > bottom) {
+				return -1;
+			}
+
+			if (i == index) {
+				return y;
+			}
+
+			y += height;
+		}
+
+		return -1;
+	}
+
 	// ---- Rendering ----
 
 	/**
@@ -305,10 +341,12 @@ abstract class GuiTradingLines extends GuiBase {
 			else {
 				// Two columns: the right one starts in the middle of the panel
 				int middle = x + this.getLinesWidth() / 2;
-				SegHover leftHover = this.drawSegs(ctx, line.segs(), segX, middle - 6, y, line.height(), i == hovered && mouseX < middle ? mouseX : -1);
+				int leftEnd = middle - 6 - this.getLeftColumnReserve();
+				SegHover leftHover = this.drawSegs(ctx, line.segs(), segX, leftEnd, y, line.height(), i == hovered && mouseX < middle ? mouseX : -1);
 				SegHover rightHover = this.drawSegs(ctx, line.right(), middle, right, y, line.height(), i == hovered && mouseX >= middle ? mouseX : -1);
 
-				if (i == hovered) {
+				// The reserved space has its own widgets with their own tooltips
+				if (i == hovered && (mouseX < leftEnd || mouseX >= middle)) {
 					SegHover hover = mouseX < middle ? leftHover : rightHover;
 					String cellTooltip = mouseX < middle ? line.tooltip() : line.rightTooltip();
 					hoverText = hover.tooltip() != null ? hover.tooltip() : cellTooltip != null ? cellTooltip : hover.cutOffText();

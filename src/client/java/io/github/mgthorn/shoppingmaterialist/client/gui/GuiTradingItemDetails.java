@@ -11,9 +11,11 @@ import fi.dy.masa.malilib.render.GuiContext;
 import fi.dy.masa.malilib.render.RenderUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import io.github.mgthorn.shoppingmaterialist.Reference;
+import io.github.mgthorn.shoppingmaterialist.client.compat.Waypoints;
 import io.github.mgthorn.shoppingmaterialist.client.trading.AnvilOptimizer;
 import io.github.mgthorn.shoppingmaterialist.client.trading.Enchants;
 import io.github.mgthorn.shoppingmaterialist.client.trading.RememberedOffer;
+import io.github.mgthorn.shoppingmaterialist.client.trading.RememberedVillager;
 import io.github.mgthorn.shoppingmaterialist.client.trading.SetupPiece;
 import io.github.mgthorn.shoppingmaterialist.client.trading.TradingCalculator;
 import io.github.mgthorn.shoppingmaterialist.client.trading.TradingCalculator.BookResult;
@@ -24,6 +26,7 @@ import io.github.mgthorn.shoppingmaterialist.client.trading.VillagerMemory;
 /**
  * One item of the trading list: its totals at the top, then the trades on the left and the anvil steps on the right.
  * The < and > buttons step through the items included in the calculation.
+ * Trades from a remembered villager have the waypoint button of the villager browser at the end of the trades column.
  */
 public class GuiTradingItemDetails extends GuiTradingLines {
 	private static final int HEADER_Y = 26;
@@ -31,6 +34,10 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 
 	private SetupPiece piece;
 	@Nullable private PieceResult result;
+	/**
+	 * The villager of each line's trade, null for lines without one
+	 */
+	private final List<RememberedVillager> lineVillagers = new ArrayList<>();
 
 	public GuiTradingItemDetails(SetupPiece piece, @Nullable Screen parent) {
 		this.piece = piece;
@@ -66,6 +73,14 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 		return this.getScreenHeight() - CONTENT_Y - 32;
 	}
 
+	/**
+	 * Room for the waypoint buttons, if any line has a villager
+	 */
+	@Override
+	protected int getLeftColumnReserve() {
+		return this.lineVillagers.stream().anyMatch(villager -> villager != null) ? Waypoints.getButtonWidth() + 4 : 0;
+	}
+
 	// ---- Widgets ----
 
 	@Override
@@ -74,7 +89,41 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 
 		this.title = StringUtils.translate(Reference.MOD_ID + ".gui.title.trading_item_details", this.piece.getDisplayName());
 		this.recalculate();
+		this.createButtons();
+	}
+
+	/**
+	 * The buttons move with the lines, so they are made again after scrolling
+	 */
+	private void createButtons() {
+		this.clearButtons();
 		this.createBottomButtons();
+		this.createWaypointButtons();
+	}
+
+	/**
+	 * At the right end of the trades column, for every shown line with a villager
+	 */
+	private void createWaypointButtons() {
+		int width = Waypoints.getButtonWidth();
+		int x = this.getLinesX() + this.getLinesWidth() / 2 - 6 - width;
+
+		for (int i = 0; i < this.lineVillagers.size(); i++) {
+			RememberedVillager villager = this.lineVillagers.get(i);
+			int y = this.getVisibleLineY(i);
+
+			if (villager == null || y < 0) {
+				continue;
+			}
+
+			ButtonGeneric button = new ButtonGeneric(x, y + (this.lines.get(i).height() - 16) / 2, width, 16, Waypoints.getButtonLabel(villager),
+					getVillagerText(villager), StringUtils.translate(KEY + "villager_browser.waypoint.hover"));
+			this.addButton(button, (btn, mouseButton) -> {
+				Waypoints.onWaypointButton(villager, this);
+				// Shows the new state on the button
+				this.createButtons();
+			});
+		}
 	}
 
 	private void createBottomButtons() {
@@ -123,6 +172,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 	public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (verticalAmount != 0 && mouseY >= CONTENT_Y) {
 			this.scrollLines(-(int) Math.signum(verticalAmount));
+			this.createButtons();
 			return true;
 		}
 
@@ -153,6 +203,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 
 	private void buildLines() {
 		this.lines.clear();
+		this.lineVillagers.clear();
 
 		if (!isInWorld()) {
 			this.addText(StringUtils.translate(KEY + "not_in_world"), YELLOW, 0);
@@ -169,6 +220,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 				Cell left = i < trades.size() ? trades.get(i) : new Cell(new Segs(), null);
 				Cell right = i < combining.size() ? combining.get(i) : new Cell(new Segs(), null);
 				this.lines.add(new Line(0, null, left.segs().list, left.tooltip(), right.segs().list, right.tooltip()));
+				this.lineVillagers.add(left.villager());
 			}
 		}
 
@@ -225,7 +277,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 					RememberedOffer offer = pr.basePurchase.offer();
 					String villager = getVillagerText(pr.basePurchase);
 					cells.add(new Cell(new Segs().item(pr.piece.getStack(), pr.piece.getDisplayName()).text("  ", GREEN)
-							.cost(offer, 1, GREEN), villager));
+							.cost(offer, 1, GREEN), villager, pr.basePurchase.villager()));
 
 					// The enchantments the bought item comes with
 					if (!offer.enchantments.isEmpty()) {
@@ -266,7 +318,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 							formatCost(book.purchase.offer())) + "\n" + hover;
 				}
 
-				cells.add(new Cell(segs, hover));
+				cells.add(new Cell(segs, hover, book.purchase.villager()));
 			}
 			else if (book.estimate != null) {
 				String hover = StringUtils.translate(KEY + "estimate.hover");
@@ -350,7 +402,11 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 	 * e.g. "Librarian (level 3): 59 73 89 (12 m)"
 	 */
 	private static String getVillagerText(TradingCalculator.Purchase purchase) {
-		return purchase.villager().getDisplayName() + ": " + purchase.villager().getLocationText();
+		return getVillagerText(purchase.villager());
+	}
+
+	private static String getVillagerText(RememberedVillager villager) {
+		return villager.getDisplayName() + ": " + villager.getLocationText();
 	}
 
 	// ---- Rendering ----

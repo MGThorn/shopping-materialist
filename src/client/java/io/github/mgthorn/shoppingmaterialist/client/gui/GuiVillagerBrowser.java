@@ -338,6 +338,14 @@ public class GuiVillagerBrowser extends GuiBase {
 				.thenComparing(Comparator.comparingInt(GuiVillagerBrowser::getTradesLeft).reversed())).orElseThrow();
 	}
 
+	/**
+	 * The villager that sells the item for the lowest price per item; with the same price, the one with more trades left
+	 */
+	private static Seller getCheapestSeller(List<Seller> sellers) {
+		return sellers.stream().min(Comparator.comparingDouble((Seller seller) -> (double) seller.offer().costACount / seller.offer().resultCount)
+				.thenComparing(Comparator.comparingInt(GuiVillagerBrowser::getTradesLeft).reversed())).orElseThrow();
+	}
+
 	private int getTotalEmeralds() {
 		int total = 0;
 
@@ -470,8 +478,13 @@ public class GuiVillagerBrowser extends GuiBase {
 			this.addButton(new ButtonGeneric(deleteX, y, 16, 16, "x", StringUtils.translate(KEY + "delete")),
 					(btn, mouseButton) -> this.confirmDelete(villager));
 
-			// Between the coordinates and the delete button
-			this.addButton(new ButtonGeneric(deleteX - 4 - this.getWaypointButtonWidth(), y, this.getWaypointButtonWidth(), 16,
+			// Between the coordinates and the delete button: chat, then waypoint
+			int waypointX = deleteX - 4 - Waypoints.getButtonWidth();
+			this.addButton(new ButtonGeneric(waypointX - 4 - this.getChatButtonWidth(), y, this.getChatButtonWidth(), 16,
+							StringUtils.translate(KEY + "chat"), StringUtils.translate(KEY + "chat.hover")),
+					(btn, mouseButton) -> Waypoints.onChatButton(villager));
+
+			this.addButton(new ButtonGeneric(waypointX, y, Waypoints.getButtonWidth(), 16,
 							Waypoints.getButtonLabel(villager), StringUtils.translate(KEY + "waypoint.hover")),
 					(btn, mouseButton) -> {
 						Waypoints.onWaypointButton(villager, this);
@@ -501,17 +514,8 @@ public class GuiVillagerBrowser extends GuiBase {
 				});
 	}
 
-	/**
-	 * Wide enough for all its labels, so the coordinates don't move when it changes
-	 */
-	private int getWaypointButtonWidth() {
-		int width = 0;
-
-		for (String label : Waypoints.getButtonLabels()) {
-			width = Math.max(width, this.getStringWidth(label));
-		}
-
-		return width + 10;
+	private int getChatButtonWidth() {
+		return this.getStringWidth(StringUtils.translate(KEY + "chat")) + 10;
 	}
 
 	private void confirmDelete(RememberedVillager villager) {
@@ -664,16 +668,20 @@ public class GuiVillagerBrowser extends GuiBase {
 		ItemStack stack = key.createStack();
 		ctx.renderItem(stack, x + 1, cellY + 1);
 
-		// The number of villagers selling it: small top left for books and gear, as the stack size for other items
-		if (key.group() == Group.ITEMS) {
-			ctx.renderItemDecorations(this.font, stack.copyWithCount(sellers.size()), x + 1, cellY + 1);
-		}
-		else {
-			this.drawSmallNumber(ctx, sellers.size(), x, cellY, false, AQUA);
-		}
+		// The number of villagers selling it small top left; other items also the items per trade (stack size)
+		// of the cheapest one
+		this.drawSmallNumber(ctx, sellers.size(), x, cellY, false, AQUA);
 
 		List<String> tooltip = new ArrayList<>();
 		tooltip.add(key.getName());
+
+		if (key.group() == Group.ITEMS) {
+			int perTrade = getCheapestSeller(sellers).offer().resultCount;
+			this.drawCount(ctx, stack, perTrade, x + 1, cellY + 1);
+
+			tooltip.add(StringUtils.translate(KEY + "legend.villagers_sell", sellers.size()));
+			tooltip.add(StringUtils.translate(KEY + "legend.per_trade", perTrade, key.getName()));
+		}
 
 		for (Seller seller : sellers) {
 			tooltip.add(StringUtils.translate(KEY + "seller", seller.villager().getDisplayName(),
@@ -802,9 +810,9 @@ public class GuiVillagerBrowser extends GuiBase {
 			this.drawStringWithShadow(ctx, distance >= 0 ? distance + " m" : "-", x, iconY + 4, 0xFF55FFFF);
 			x += 42;
 
-			// The coordinates at the end of the row, left of the waypoint and delete buttons
+			// The coordinates at the end of the row, left of the chat, waypoint and delete buttons
 			String coordinates = villager.getCoordinates();
-			int coordinatesX = deleteX - 4 - this.getWaypointButtonWidth() - 6 - this.getStringWidth(coordinates);
+			int coordinatesX = deleteX - 4 - Waypoints.getButtonWidth() - 4 - this.getChatButtonWidth() - 6 - this.getStringWidth(coordinates);
 			this.drawStringWithShadow(ctx, coordinates, coordinatesX, iconY + 4, 0xFF55FFFF);
 			this.hitBoxes.add(new HitBox(coordinatesX, y, this.getStringWidth(coordinates), ROW_HEIGHT, info, null));
 
@@ -837,8 +845,8 @@ public class GuiVillagerBrowser extends GuiBase {
 	 * How many more times a trade can be done before the villager restocks.
 	 * <ul>
 	 * <li>Emerald trades: top right, and the items per trade as the stack size</li>
+	 * <li>Other items: top right, and the items per trade as the stack size</li>
 	 * <li>Books and gear: top right only</li>
-	 * <li>Other items: as the stack size</li>
 	 * </ul>
 	 * A villager that may have restocked shows the full uses in yellow; a sold out trade is darkened, without a number.
 	 */
@@ -850,30 +858,22 @@ public class GuiVillagerBrowser extends GuiBase {
 		if (key.buys()) {
 			this.drawCount(ctx, stack, offer.costACount, x, y);
 		}
+		else if (key.group() == Group.ITEMS) {
+			this.drawCount(ctx, stack, offer.resultCount, x, y);
+		}
 
 		if (tradesLeft <= 0) {
 			// Sold out until the villager restocks
 			RenderUtils.drawRect(ctx, x, y, 16, 16, 0x90000000);
 		}
-		else if (key.buys() || key.group() == Group.BOOKS || key.group() == Group.GEAR) {
-			this.drawSmallNumber(ctx, tradesLeft, x + 17, y - 1, true, color);
-		}
-		else if (restocked) {
-			this.drawCount(ctx, stack, tradesLeft, x, y, color);
-		}
 		else {
-			this.drawCount(ctx, stack, tradesLeft, x, y);
+			this.drawSmallNumber(ctx, tradesLeft, x + 17, y - 1, true, color);
 		}
 	}
 
 	/**
 	 * A number drawn like a stack size; unlike a stack size also 0 and 1
 	 */
-	private void drawCount(GuiContext ctx, ItemStack stack, int count, int x, int y, int color) {
-		String text = String.valueOf(count);
-		this.drawStringWithShadow(ctx, text, x + 17 - this.getStringWidth(text), y + 9, color);
-	}
-
 	private void drawCount(GuiContext ctx, ItemStack stack, int count, int x, int y) {
 		if (count > 1) {
 			ctx.renderItemDecorations(this.font, stack.copyWithCount(count), x, y);
