@@ -116,8 +116,8 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 				continue;
 			}
 
-			ButtonGeneric button = new ButtonGeneric(x, y + (this.lines.get(i).height() - 16) / 2, width, 16, Waypoints.getButtonLabel(villager),
-					getVillagerText(villager), StringUtils.translate(KEY + "villager_browser.waypoint.hover"));
+			ButtonGeneric button = new Hover.Button(x, y + (this.lines.get(i).height() - 16) / 2, width, 16, Waypoints.getButtonLabel(villager),
+					getVillagerText(villager) + "\n" + Hover.text(KEY + "villager_browser.waypoint.hover"));
 			this.addButton(button, (btn, mouseButton) -> {
 				Waypoints.onWaypointButton(villager, this);
 				// Shows the new state on the button
@@ -406,7 +406,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 	}
 
 	private static String getVillagerText(RememberedVillager villager) {
-		return villager.getDisplayName() + ": " + villager.getLocationText();
+		return villager.getDisplayName() + ": " + Hover.value(villager.getLocationText());
 	}
 
 	// ---- Rendering ----
@@ -436,7 +436,7 @@ public class GuiTradingItemDetails extends GuiTradingLines {
 		this.drawLines(ctx, mouseX, mouseY);
 
 		if (hover.tooltip() != null) {
-			RenderUtils.drawHoverText(ctx, mouseX, mouseY, List.of(hover.tooltip().split("\n")));
+			RenderUtils.drawHoverText(ctx, mouseX, mouseY, Hover.lines(hover.tooltip()));
 		}
 	}
 }

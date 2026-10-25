@@ -136,6 +136,8 @@ public class TradingCalculator {
 	public static class Visit {
 		public final RememberedVillager villager;
 		public final Map<String, Integer> purchases = new LinkedHashMap<>();
+		// The icon of each purchase: the enchanted book or the item
+		public final Map<String, ItemStack> icons = new LinkedHashMap<>();
 
 		Visit(RememberedVillager villager) {
 			this.villager = villager;
@@ -150,6 +152,8 @@ public class TradingCalculator {
 		public int emeraldsKnown;
 		public int estimateMin;
 		public int estimateMax;
+		// Blank books in the inputs for books without a remembered villager
+		public int estimateBooks;
 		// Books and bought items no remembered villager sells
 		public int missingTrades;
 		// Every wanted enchantment no remembered villager sells, including the excluded ones
@@ -262,6 +266,7 @@ public class TradingCalculator {
 				// Bring enough for the most expensive price, plus the book the librarian wants
 				addInput(result, Items.EMERALD, book.estimate[1]);
 				addInput(result, Items.BOOK, 1);
+				result.estimateBooks++;
 				pr.bookCount++;
 			}
 			else {
@@ -431,8 +436,18 @@ public class TradingCalculator {
 			addInput(result, offer.costB, offer.costBCount * count);
 		}
 
-		result.visits.computeIfAbsent(purchase.villager().uuid, uuid -> new Visit(purchase.villager()))
-				.purchases.merge(what, count, Integer::sum);
+		Visit visit = result.visits.computeIfAbsent(purchase.villager().uuid, uuid -> new Visit(purchase.villager()));
+		visit.purchases.merge(what, count, Integer::sum);
+		visit.icons.computeIfAbsent(what, key -> getIcon(offer));
+	}
+
+	private static ItemStack getIcon(RememberedOffer offer) {
+		if (offer.result == Items.ENCHANTED_BOOK && offer.enchantments.size() == 1) {
+			Map.Entry<String, Integer> enchantment = offer.enchantments.entrySet().iterator().next();
+			return Enchants.createBook(enchantment.getKey(), enchantment.getValue());
+		}
+
+		return new ItemStack(offer.result);
 	}
 
 	private static void addInput(Result result, Item item, int count) {

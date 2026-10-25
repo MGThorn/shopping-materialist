@@ -106,6 +106,25 @@ public class JourneyMapWaypoints {
 	}
 
 	/**
+	 * Shows or hides the waypoint at the villager's position, adding one to the "Villagers" group if needed
+	 * @return false if the API isn't ready
+	 */
+	public static boolean setShown(RememberedVillager villager, boolean shown) {
+		State state = getState(villager);
+
+		if (state == State.NOT_READY) {
+			return false;
+		}
+
+		// Toggling adds a missing waypoint, or turns an existing one on or off
+		if ((state == State.ON) != shown) {
+			toggle(villager);
+		}
+
+		return true;
+	}
+
+	/**
 	 * Turns off every waypoint in the "Villagers" group
 	 * @return how many were turned off, or -1 if the API isn't ready
 	 */

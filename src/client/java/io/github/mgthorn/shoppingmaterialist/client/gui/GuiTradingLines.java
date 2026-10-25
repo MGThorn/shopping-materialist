@@ -26,6 +26,7 @@ abstract class GuiTradingLines extends GuiBase {
 	static final String KEY = Reference.MOD_ID + ".gui.trading.";
 	static final int TEXT_LINE_HEIGHT = 11;
 	static final int ICON_LINE_HEIGHT = 18;
+	static final int CHECKBOX_SIZE = 9;
 	private static final Identifier XP_ORB_TEXTURE = Identifier.withDefaultNamespace("textures/entity/experience/experience_orb.png");
 	private static final int XP_ORB_COLOR = 0xFFB0FF40;
 
@@ -71,9 +72,11 @@ abstract class GuiTradingLines extends GuiBase {
 
 	/**
 	 * A piece of a line: text (when {@code text} is set), an item icon, or the experience orb
+	 * @param count drawn on the icon like an inventory slot, if above 1
+	 * @param width the least width of a text, so the following pieces line up between lines
 	 */
 	record Seg(@Nullable String text, int color, @Nullable ItemStack icon, boolean xp, @Nullable String tooltip,
-			@Nullable MissingEnchantment missing) {
+			@Nullable MissingEnchantment missing, int count, int width) {
 	}
 
 	/**
@@ -89,7 +92,14 @@ abstract class GuiTradingLines extends GuiBase {
 		final List<Seg> list = new ArrayList<>();
 
 		Segs text(String text, int color) {
-			this.list.add(new Seg(text, color, null, false, null, null));
+			return this.text(text, color, 0);
+		}
+
+		/**
+		 * Text taking at least {@code width}, so what follows starts at the same place on every line
+		 */
+		Segs text(String text, int color, int width) {
+			this.list.add(new Seg(text, color, null, false, null, null, 0, width));
 			return this;
 		}
 
@@ -106,7 +116,14 @@ abstract class GuiTradingLines extends GuiBase {
 		}
 
 		Segs item(ItemStack stack, String tooltip) {
-			this.list.add(new Seg(null, 0, stack, false, tooltip, null));
+			return this.item(stack, tooltip, 1);
+		}
+
+		/**
+		 * An icon with the count drawn on it like in an inventory slot
+		 */
+		Segs item(ItemStack stack, String tooltip, int count) {
+			this.list.add(new Seg(null, 0, stack, false, tooltip, null, count, 0));
 			return this;
 		}
 
@@ -116,7 +133,7 @@ abstract class GuiTradingLines extends GuiBase {
 		Segs missing(MissingEnchantment missing) {
 			String name = Enchants.getName(missing.id(), missing.level());
 			String tooltip = name + "\n" + StringUtils.translate(KEY + (missing.excluded() ? "missing.excluded" : "missing.included"));
-			this.list.add(new Seg(null, 0, Enchants.createBook(missing.id(), missing.level()), false, tooltip, missing));
+			this.list.add(new Seg(null, 0, Enchants.createBook(missing.id(), missing.level()), false, tooltip, missing, 1, 0));
 			return this;
 		}
 
@@ -124,7 +141,7 @@ abstract class GuiTradingLines extends GuiBase {
 		 * "[xp] 21 lvl"
 		 */
 		Segs levels(int levels, boolean tooExpensive) {
-			this.list.add(new Seg(null, 0, null, true, StringUtils.translate(KEY + "levels.hover"), null));
+			this.list.add(new Seg(null, 0, null, true, StringUtils.translate(KEY + "levels.hover"), null, 1, 0));
 			// At least two digits (05 lvl), so the rows line up
 			return this.text(" " + StringUtils.translate(KEY + "levels", String.format("%02d", levels)), tooExpensive ? RED : WHITE);
 		}
@@ -161,6 +178,13 @@ abstract class GuiTradingLines extends GuiBase {
 	 * Space kept free at the right end of the left column of two-column lines, e.g. for buttons
 	 */
 	protected int getLeftColumnReserve() {
+		return 0;
+	}
+
+	/**
+	 * The background color of a line, e.g. for cards; 0 for none
+	 */
+	protected int getLineBackground(int index) {
 		return 0;
 	}
 
@@ -318,6 +342,11 @@ abstract class GuiTradingLines extends GuiBase {
 			}
 
 			lastShown = i;
+			int background = this.getLineBackground(i);
+
+			if (background != 0) {
+				RenderUtils.drawRect(ctx, x - 2, y, right - x + 4, line.height(), background);
+			}
 
 			if (i == hovered && line.toggle() != null) {
 				RenderUtils.drawRect(ctx, x - 1, y, right - x + 2, line.height(), 0x30FFFFFF);
@@ -363,7 +392,7 @@ abstract class GuiTradingLines extends GuiBase {
 
 		// The name of a hovered icon, the line's tooltip, or the full text of a cut off line
 		if (hoverText != null) {
-			RenderUtils.drawHoverText(ctx, mouseX, mouseY, List.of(hoverText.split("\n")));
+			RenderUtils.drawHoverText(ctx, mouseX, mouseY, Hover.lines(hoverText));
 		}
 	}
 
@@ -387,7 +416,7 @@ abstract class GuiTradingLines extends GuiBase {
 			if (seg.text() != null) {
 				String text = this.trimToWidth(seg.text(), xRight - x);
 				this.drawStringWithShadow(ctx, text, x, textY, seg.color());
-				x += this.getStringWidth(text);
+				x += Math.max(seg.width(), this.getStringWidth(text));
 
 				if (!text.equals(seg.text())) {
 					cutOff = true;
@@ -405,6 +434,10 @@ abstract class GuiTradingLines extends GuiBase {
 				}
 				else if (seg.icon() != null) {
 					ctx.renderItem(seg.icon(), x, y + 1);
+
+					if (seg.count() > 1) {
+						ctx.renderItemDecorations(this.font, seg.icon().copyWithCount(seg.count()), x, y + 1);
+					}
 				}
 
 				if (seg.missing() != null) {
@@ -432,6 +465,23 @@ abstract class GuiTradingLines extends GuiBase {
 		}
 
 		return new SegHover(tooltip, cutOffText);
+	}
+
+	/**
+	 * A small outlined box, with a green check mark when checked
+	 */
+	static void drawCheckbox(GuiContext ctx, int x, int y, boolean checked) {
+		RenderUtils.drawOutline(ctx, x, y, CHECKBOX_SIZE, CHECKBOX_SIZE, checked ? 0xFFC0C0C0 : 0xFF707070);
+
+		if (!checked) {
+			return;
+		}
+
+		int[][] pixels = { { 2, 4 }, { 3, 5 }, { 4, 6 }, { 5, 5 }, { 6, 4 }, { 7, 3 }, { 7, 2 }, { 2, 5 }, { 3, 6 }, { 4, 7 }, { 5, 6 }, { 6, 5 } };
+
+		for (int[] p : pixels) {
+			RenderUtils.drawRect(ctx, x + p[0] - 1, y + p[1] - 1, 1, 1, GREEN);
+		}
 	}
 
 	/**

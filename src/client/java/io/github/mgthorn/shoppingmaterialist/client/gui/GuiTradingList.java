@@ -1,28 +1,22 @@
 package io.github.mgthorn.shoppingmaterialist.client.gui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.gui.GuiConfirmAction;
 import fi.dy.masa.malilib.gui.GuiTextInput;
-import fi.dy.masa.malilib.gui.Message.MessageType;
 import fi.dy.masa.malilib.gui.button.ButtonGeneric;
 import fi.dy.masa.malilib.interfaces.IConfirmationListener;
 import fi.dy.masa.malilib.interfaces.IStringConsumerFeedback;
@@ -31,9 +25,9 @@ import fi.dy.masa.malilib.render.RenderUtils;
 import fi.dy.masa.malilib.util.StringUtils;
 import fi.dy.masa.malilib.util.input.ScanCodes;
 import io.github.mgthorn.shoppingmaterialist.Reference;
-import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingList;
-import io.github.mgthorn.shoppingmaterialist.client.shoppinglist.ShoppingListManager;
+import io.github.mgthorn.shoppingmaterialist.client.compat.Waypoints;
 import io.github.mgthorn.shoppingmaterialist.client.trading.Enchants;
+import io.github.mgthorn.shoppingmaterialist.client.trading.RememberedVillager;
 import io.github.mgthorn.shoppingmaterialist.client.trading.SetupPiece;
 import io.github.mgthorn.shoppingmaterialist.client.trading.TradingCalculator;
 import io.github.mgthorn.shoppingmaterialist.client.trading.TradingCalculator.MissingEnchantment;
@@ -43,9 +37,9 @@ import io.github.mgthorn.shoppingmaterialist.client.trading.TradingSetupManager;
 import io.github.mgthorn.shoppingmaterialist.client.trading.VillagerMemory;
 
 /**
- * The trading list: pick a setup of items with enchantments on the left, and see on the right
- * what to bring and which remembered villagers to visit. The sections and villagers on the right can be expanded
- * and collapsed; each item's trades and anvil steps are in {@link GuiTradingItemDetails}.
+ * The trading list: pick a setup of items with enchantments on the left, and see on the right, as cards,
+ * what to bring, which remembered villagers to visit and which enchantments nobody sells. The cards and villagers
+ * can be expanded and collapsed; each item's trades and anvil steps are in {@link GuiTradingItemDetails}.
  */
 public class GuiTradingList extends GuiTradingLines {
 	private static final int CONTENT_Y = 50;
@@ -54,29 +48,28 @@ public class GuiTradingList extends GuiTradingLines {
 	private static final Identifier DETAILS_ICON = Identifier.fromNamespaceAndPath(Reference.MOD_ID, "textures/gui/details.png");
 	// The item rows on the left: checkbox, item icon, then the buttons from the right
 	private static final int CHECKBOX_X = 15;
-	private static final int CHECKBOX_SIZE = 9;
 	private static final int PIECE_ICON_X = 30;
+	// The summary cards: a title bar, then a lighter body
+	private static final int CARD_HEADER_BACKGROUND = 0x60806040;
+	private static final int CARD_BACKGROUND = 0x20FFFFFF;
+	private static final int ICON_GAP = 2;
 
 	// Expanded villagers (UUID) and collapsed sections. Static, so it is remembered while the game runs.
 	private static final Set<Object> EXPANDED = new HashSet<>();
 	private static final Set<Section> COLLAPSED = new HashSet<>();
 
 	/**
-	 * The expandable sections of the result panel. Unlike villagers they start expanded.
+	 * The cards of the result panel. Unlike villagers they start expanded.
 	 */
 	private enum Section {
-		NEEDED("needed"),
-		VISITS("visits"),
-		MISSING("missing_enchantments");
-
-		private final String translationKey;
-
-		Section(String name) {
-			this.translationKey = KEY + name;
-		}
+		NEEDED,
+		VISITS,
+		MISSING
 	}
 
 	@Nullable private TradingCalculator.Result result;
+	// The background color of the card lines, by line index
+	private final Map<Integer, Integer> backgrounds = new HashMap<>();
 	private int pieceScroll;
 
 	public GuiTradingList(@Nullable Screen parent) {
@@ -91,11 +84,12 @@ public class GuiTradingList extends GuiTradingLines {
 	// ---- Layout ----
 
 	/**
-	 * Just wide enough for a row: checkbox, item icon, then the source, details, enchantments and remove buttons
+	 * Just wide enough for a row: checkbox, item icon, then the details, enchantments and remove buttons.
+	 * Where the items come from is set in the export screen.
 	 */
 	private int getPiecesWidth() {
 		int iconRight = PIECE_ICON_X + 16 + 4;
-		return iconRight + this.getSourceButtonWidth() + 2 + 20 + 2 + 20 + 2 + 18 + 2 - 10;
+		return iconRight + 20 + 2 + 20 + 2 + 18 + 2 - 10;
 	}
 
 	@Override
@@ -177,50 +171,45 @@ public class GuiTradingList extends GuiTradingLines {
 			ButtonGeneric details = new ButtonGeneric(x, y, 20, 20, "", StringUtils.translate(KEY + "details_piece"));
 			details.setEnabled(piece.isEnabled());
 			this.addButton(details, (btn, mouseButton) -> GuiBase.openGui(new GuiTradingItemDetails(piece, this)));
-
-			int sourceWidth = this.getSourceButtonWidth();
-			x -= sourceWidth + 2;
-			this.addButton(new ButtonGeneric(x, y, sourceWidth, 20, piece.getSource().getDisplayName(),
-							StringUtils.translate(KEY + "source.hover")),
-					(btn, mouseButton) -> this.changeSetup(() -> piece.setSource(piece.getSource().next())));
-
 		}
-	}
-
-	private int getSourceButtonWidth() {
-		int width = 0;
-
-		for (SetupPiece.Source source : SetupPiece.Source.values()) {
-			width = Math.max(width, this.getStringWidth(source.getDisplayName()) + 10);
-		}
-
-		return width;
 	}
 
 	private void createBottomButtons() {
-		int x = 10;
 		int y = this.getScreenHeight() - 26;
 		boolean inWorld = isInWorld();
+		List<RememberedVillager> visits = this.getVillagersToVisit();
 
-		x += this.addButton(x, y, StringUtils.translate(KEY + "add_piece"), null,
+		this.addButton(10, y, StringUtils.translate(KEY + "add_piece"), null,
 				() -> GuiBase.openGui(new GuiTradingItemPicker(this.getSetup(), this)));
 
-		ButtonGeneric export = new ButtonGeneric(x, y, this.getStringWidth(StringUtils.translate(KEY + "export")) + 10, 20,
-				StringUtils.translate(KEY + "export"), StringUtils.translate(KEY + "export.hover"));
-		export.setEnabled(inWorld);
-		this.addButton(export, (btn, mouseButton) -> this.export());
-		x += export.getWidth() + 2;
-
-		ButtonGeneric chat = new ButtonGeneric(x, y, this.getStringWidth(StringUtils.translate(KEY + "chat")) + 10, 20,
-				StringUtils.translate(KEY + "chat"), StringUtils.translate(KEY + "chat.hover"));
-		chat.setEnabled(inWorld && this.result != null && !this.result.visits.isEmpty());
-		this.addButton(chat, (btn, mouseButton) -> this.sendCoordinatesToChat());
-		x += chat.getWidth() + 2;
-
+		// From the right: villager browser, waypoints, export
+		int x = this.getScreenWidth() - 10;
 		String villagers = StringUtils.translate(KEY + "villagers", VillagerMemory.getInstance().getVillagers().size());
-		x += this.addButton(x, y, villagers, null, () -> GuiBase.openGui(new GuiVillagerBrowser(this)));
+		x -= this.getStringWidth(villagers) + 10;
+		this.addButton(x, y, villagers, null, () -> GuiBase.openGui(new GuiVillagerBrowser(this)));
 
-		this.addButton(x, y, StringUtils.translate(KEY + "done"), null, () -> GuiBase.openGui(this.getParent()));
+		String waypointsOn = StringUtils.translate(KEY + "waypoints.on");
+		String waypointsOff = StringUtils.translate(KEY + "waypoints.off");
+		int waypointsWidth = Math.max(this.getStringWidth(waypointsOn), this.getStringWidth(waypointsOff)) + 10;
+		x -= waypointsWidth + 2;
+		ButtonGeneric waypoints = Hover.Button.of(x, y, waypointsWidth, 20,
+				Waypoints.areAllShown(visits) ? waypointsOn : waypointsOff, KEY + "waypoints.hover");
+		waypoints.setEnabled(!visits.isEmpty());
+		this.addButton(waypoints, (btn, mouseButton) -> {
+			Waypoints.onToggleAll(visits, this);
+			// Shows the new state on the button
+			this.initGui();
+		});
+
+		String exportLabel = StringUtils.translate(KEY + "export");
+		x -= this.getStringWidth(exportLabel) + 10 + 2;
+		ButtonGeneric export = Hover.Button.of(x, y, this.getStringWidth(exportLabel) + 10, 20, exportLabel, KEY + "export.hover");
+		export.setEnabled(inWorld);
+		this.addButton(export, (btn, mouseButton) -> GuiBase.openGui(new GuiTradingExport(this)));
+	}
+
+	private List<RememberedVillager> getVillagersToVisit() {
+		return this.result != null ? this.result.getVisitsByDistance().stream().map(visit -> visit.villager).toList() : List.of();
 	}
 
 	/**
@@ -230,7 +219,7 @@ public class GuiTradingList extends GuiTradingLines {
 	private int addButton(int x, int y, String label, @Nullable String hoverKey, Runnable action) {
 		int width = this.getStringWidth(label) + 10;
 		ButtonGeneric button = hoverKey != null
-				? new ButtonGeneric(x, y, width, 20, label, StringUtils.translate(hoverKey))
+				? Hover.Button.of(x, y, width, 20, label, hoverKey)
 				: new ButtonGeneric(x, y, width, 20, label);
 		this.addButton(button, (btn, mouseButton) -> action.run());
 		return width + 2;
@@ -296,54 +285,6 @@ public class GuiTradingList extends GuiTradingLines {
 				KEY + "delete_setup_message", this.getSetup().getName()));
 	}
 
-	// ---- Actions ----
-
-	/**
-	 * Puts everything to bring into the shopping list "Trading: setup name" and opens it in Litematica's material list
-	 */
-	private void export() {
-		if (this.result == null || this.result.inputs.isEmpty()) {
-			this.addMessage(MessageType.WARNING, KEY + "export.empty");
-			return;
-		}
-
-		String name = StringUtils.translate(KEY + "export.list_name", this.getSetup().getName());
-		ShoppingList list = ShoppingListManager.getInstance().getOrCreate(name);
-
-		if (list == null) {
-			return;
-		}
-
-		list.setItems(this.result.inputs);
-		GuiShoppingLists.openMaterialList(list, this);
-	}
-
-	/**
-	 * Writes the villagers to visit into the own chat (only visible to the player); clicking a line copies the coordinates
-	 */
-	private void sendCoordinatesToChat() {
-		Minecraft mc = Minecraft.getInstance();
-
-		if (mc.player == null || this.result == null) {
-			return;
-		}
-
-		mc.player.sendSystemMessage(Component.literal(StringUtils.translate(KEY + "chat.header", this.getSetup().getName()))
-				.withStyle(style -> style.withColor(0xFFAA00)));
-
-		for (Visit visit : this.result.getVisitsByDistance()) {
-			String coordinates = visit.villager.getCoordinates();
-			Style style = Style.EMPTY
-					.withClickEvent(new ClickEvent.CopyToClipboard(coordinates))
-					.withHoverEvent(new HoverEvent.ShowText(Component.literal(StringUtils.translate(KEY + "chat.copy"))));
-
-			MutableComponent line = Component.literal(" " + visit.villager.getDisplayName() + ": ").withStyle(s -> s.withColor(0xFFFFFF))
-					.append(Component.literal(visit.villager.getLocationText()).withStyle(style.withColor(0x55FFFF).withUnderlined(true)))
-					.append(Component.literal(" - " + formatPurchases(visit.purchases)).withStyle(s -> s.withColor(0xA0A0A0)));
-			mc.player.sendSystemMessage(line);
-		}
-	}
-
 	private static String formatPurchases(Map<String, Integer> purchases) {
 		List<String> parts = new ArrayList<>();
 		purchases.forEach((what, count) -> parts.add(count > 1 ? what + " x" + count : what));
@@ -364,88 +305,151 @@ public class GuiTradingList extends GuiTradingLines {
 	}
 
 	/**
-	 * Turns the result into lines, showing the children of expanded sections and villagers only
+	 * Turns the result into cards: total needed, villagers to visit, missing enchantments.
+	 * A card's lines are only added if it is expanded; villager rows expand to their coordinates and purchases.
 	 */
 	private void buildLines() {
 		this.lines.clear();
+		this.backgrounds.clear();
 		TradingCalculator.Result result = this.result;
 
 		if (result == null) {
 			this.addText(StringUtils.translate(KEY + "not_in_world"), YELLOW, 0);
 		}
 		else {
-			this.addNeededLines(result);
-			this.addVisitLines(result);
-			this.addMissingLines(result);
+			this.addNeededCard(result);
+			this.addSpacer();
+			this.addVisitCard(result);
+
+			if (!result.missingEnchantments.isEmpty()) {
+				this.addSpacer();
+				this.addMissingCard(result);
+			}
 		}
 
 		this.clampLineScroll();
 	}
 
-	private void addNeededLines(TradingCalculator.Result result) {
-		if (result.missingTrades > 0) {
-			this.addText(StringUtils.translate(KEY + "summary.missing_trades", result.missingTrades), RED, 0);
-		}
-
-		if (result.tooExpensive) {
-			this.addText(StringUtils.translate(KEY + "summary.too_expensive"), RED, 0);
-		}
-
-		if (!this.addSection(Section.NEEDED)) {
+	/**
+	 * The warnings, the levels and emeralds, then everything else to bring as icons with their counts
+	 */
+	private void addNeededCard(TradingCalculator.Result result) {
+		if (!this.addCardHeader(Section.NEEDED, StringUtils.translate(KEY + "needed"))) {
 			return;
 		}
 
-		// The anvil levels always come first
-		this.addLine(1, new Segs().levels(result.totalLevels, result.tooExpensive), StringUtils.translate(KEY + "levels.hover"));
+		List<String> warnings = new ArrayList<>();
+		List<String> warningTooltips = new ArrayList<>();
+
+		if (result.missingTrades > 0) {
+			warnings.add(StringUtils.translate(KEY + "summary.missing_trades", result.missingTrades));
+			warningTooltips.add(StringUtils.translate(KEY + "summary.missing_trades.hover"));
+		}
+
+		if (result.tooExpensive) {
+			warnings.add(StringUtils.translate(KEY + "summary.too_expensive.short"));
+			warningTooltips.add(StringUtils.translate(KEY + "summary.too_expensive"));
+		}
+
+		if (!warnings.isEmpty()) {
+			this.addCardLine(new Segs().text(String.join(" \u00b7 ", warnings), RED), String.join("\n", warningTooltips));
+		}
+
+		// The anvil levels always come first, then the emeralds with the estimate separated
+		Segs first = new Segs().levels(result.totalLevels, result.tooExpensive);
 
 		if (result.emeraldsKnown > 0 || result.estimateMax > 0) {
 			String hover = result.estimateMax > 0
-					? StringUtils.translate(KEY + "emeralds.hover_estimate", result.emeraldsKnown, result.estimateMin, result.estimateMax)
+					? Hover.text(KEY + "emeralds.hover_estimate", result.emeraldsKnown, result.estimateMin, result.estimateMax)
 					: StringUtils.translate(KEY + "emeralds.hover", result.emeraldsKnown);
-			Segs segs = new Segs().item(Items.EMERALD, hover)
+			first.text("    ", WHITE).item(Items.EMERALD, hover)
 					.text(" " + formatEmeralds(result.emeraldsKnown, result.estimateMin, result.estimateMax), result.estimateMax > 0 ? YELLOW : WHITE);
-			this.addLine(1, segs, hover);
 		}
 
+		this.addCardLine(first, null);
+
+		// Like inventory slots: the icons with their counts, wrapped to the panel width
+		int perLine = Math.max(1, (this.getLinesWidth() - 16) / (16 + ICON_GAP));
+		Segs segs = new Segs();
+		int count = 0;
+
 		for (Map.Entry<Item, Integer> entry : result.inputs.entrySet()) {
-			// Emeralds are shown above, with the estimate separated
-			if (entry.getKey() != Items.EMERALD) {
-				this.addLine(1, new Segs().item(entry.getKey()).text(" " + entry.getValue(), WHITE), null);
+			if (entry.getKey() == Items.EMERALD) {
+				continue;
+			}
+
+			if (count == perLine) {
+				this.addCardLine(segs, null);
+				segs = new Segs();
+				count = 0;
+			}
+
+			ItemStack stack = new ItemStack(entry.getKey());
+			segs.item(stack, stack.getHoverName().getString() + ": " + Hover.value(entry.getValue()), entry.getValue()).text("", WHITE, ICON_GAP);
+			count++;
+		}
+
+		if (count > 0) {
+			this.addCardLine(segs, null);
+		}
+	}
+
+	/**
+	 * One row per villager, nearest first: job block, level, distance, and what to buy there as icons
+	 */
+	private void addVisitCard(TradingCalculator.Result result) {
+		String title = StringUtils.translate(KEY + "visits", result.visits.size());
+
+		if (!this.addCardHeader(Section.VISITS, title)) {
+			return;
+		}
+
+		if (result.visits.isEmpty()) {
+			this.addCardText(StringUtils.translate(KEY + "no_visits"), GRAY, 1);
+			return;
+		}
+
+		int levelWidth = this.getStringWidth("III") + 6;
+		int distanceWidth = this.getStringWidth("9999 m") + 6;
+
+		for (Visit visit : result.getVisitsByDistance()) {
+			RememberedVillager villager = visit.villager;
+			int distance = villager.getDistance();
+			String distanceText = distance >= 0 ? distance + " m" : getDimensionName(villager.dimension);
+			Segs segs = new Segs().item(GuiVillagerBrowser.getJobIcon(villager), villager.getDisplayName())
+					.text(" " + GuiVillagerBrowser.getLevelText(villager), GOLD, levelWidth)
+					.text(distanceText, AQUA, distanceWidth);
+
+			visit.purchases.forEach((what, count) -> segs.item(visit.icons.get(what), count > 1 ? what + " x" + count : what, count));
+
+			String tooltip = villager.getDisplayName() + "\n" + Hover.value(villager.getLocationText());
+			this.lines.add(new Line(1, villager.uuid, segs.list, tooltip));
+			this.backgrounds.put(this.lines.size() - 1, CARD_BACKGROUND);
+
+			if (isExpanded(villager.uuid)) {
+				this.addCardText(villager.getLocationText(), AQUA, 3);
+				this.addCardText(formatPurchases(visit.purchases), GRAY, 3);
 			}
 		}
 	}
 
-	private void addVisitLines(TradingCalculator.Result result) {
-		if (result.visits.isEmpty()) {
-			this.addText(StringUtils.translate(KEY + "no_visits"), GRAY, 0);
-		}
-		else {
-			if (!this.addSection(Section.VISITS)) {
-				return;
-			}
-
-			for (Visit visit : result.getVisitsByDistance()) {
-				UUID uuid = visit.villager.uuid;
-				String text = visit.villager.getDisplayName() + ": " + visit.villager.getLocationText();
-				this.lines.add(new Line(1, uuid, new Segs().text(text, AQUA).list, null));
-
-				if (isExpanded(uuid)) {
-					this.addText(formatPurchases(visit.purchases), GRAY, 3);
-				}
-			}
-		}
+	private static String getDimensionName(String dimension) {
+		Identifier id = Identifier.tryParse(dimension);
+		return id != null ? id.getPath() : dimension;
 	}
 
 	/**
 	 * All enchantments no remembered villager sells, most used first, as book icons only, wrapped to the panel width.
 	 * Clicking one excludes it from all calculations (shown with a red "no" sign) or includes it again.
 	 */
-	private void addMissingLines(TradingCalculator.Result result) {
-		if (result.missingEnchantments.isEmpty() || !this.addSection(Section.MISSING)) {
+	private void addMissingCard(TradingCalculator.Result result) {
+		String title = StringUtils.translate(KEY + "missing_enchantments", result.missingEnchantments.size());
+
+		if (!this.addCardHeader(Section.MISSING, title)) {
 			return;
 		}
 
-		int perLine = Math.max(1, (this.getLinesWidth() - 8) / 16);
+		int perLine = Math.max(1, (this.getLinesWidth() - 16) / 16);
 		Segs segs = new Segs();
 
 		// Most used enchantments first
@@ -454,23 +458,46 @@ public class GuiTradingList extends GuiTradingLines {
 
 		for (MissingEnchantment missing : sorted) {
 			if (segs.list.size() == perLine) {
-				this.addLine(1, segs, null);
+				this.addCardLine(segs, null);
 				segs = new Segs();
 			}
 
 			segs.missing(missing);
 		}
 
-		this.addLine(1, segs, null);
+		this.addCardLine(segs, null);
 	}
 
 	/**
-	 * Adds an expandable section header
-	 * @return true if the section is expanded, so its lines should be added
+	 * Adds the title bar of a card, which expands or collapses it
+	 * @return true if the card is expanded, so its lines should be added
 	 */
-	private boolean addSection(Section section) {
-		this.lines.add(new Line(0, section, new Segs().text(StringUtils.translate(section.translationKey), GOLD).list, null));
+	private boolean addCardHeader(Section section, String title) {
+		this.lines.add(new Line(0, section, new Segs().text(title, GOLD).list, null));
+		this.backgrounds.put(this.lines.size() - 1, CARD_HEADER_BACKGROUND);
 		return isExpanded(section);
+	}
+
+	private void addCardLine(Segs segs, @Nullable String tooltip) {
+		this.addLine(1, segs, tooltip);
+		this.backgrounds.put(this.lines.size() - 1, CARD_BACKGROUND);
+	}
+
+	private void addCardText(String text, int color, int indent) {
+		this.addText(text, color, indent);
+		this.backgrounds.put(this.lines.size() - 1, CARD_BACKGROUND);
+	}
+
+	/**
+	 * A small gap between two cards
+	 */
+	private void addSpacer() {
+		this.addText("", WHITE, 0);
+	}
+
+	@Override
+	protected int getLineBackground(int index) {
+		return this.backgrounds.getOrDefault(index, 0);
 	}
 
 	@Override
@@ -574,11 +601,7 @@ public class GuiTradingList extends GuiTradingLines {
 
 			// Include in the calculation: a small outline, with a check mark when included
 			int boxY = this.getCheckboxY(y);
-			RenderUtils.drawOutline(ctx, CHECKBOX_X, boxY, CHECKBOX_SIZE, CHECKBOX_SIZE, piece.isEnabled() ? 0xFFC0C0C0 : 0xFF707070);
-
-			if (piece.isEnabled()) {
-				drawCheckMark(ctx, CHECKBOX_X, boxY);
-			}
+			drawCheckbox(ctx, CHECKBOX_X, boxY, piece.isEnabled());
 
 			// Only the icon; the name is the tooltip
 			ctx.renderItem(piece.getStack(), PIECE_ICON_X, y + 3);
@@ -593,18 +616,6 @@ public class GuiTradingList extends GuiTradingLines {
 
 	private int getCheckboxY(int rowY) {
 		return rowY + (ROW_HEIGHT - CHECKBOX_SIZE) / 2;
-	}
-
-	/**
-	 * A small green check mark inside the checkbox
-	 */
-	private static void drawCheckMark(GuiContext ctx, int x, int y) {
-		int color = 0xFF55FF55;
-		int[][] pixels = { { 2, 4 }, { 3, 5 }, { 4, 6 }, { 5, 5 }, { 6, 4 }, { 7, 3 }, { 7, 2 }, { 2, 5 }, { 3, 6 }, { 4, 7 }, { 5, 6 }, { 6, 5 } };
-
-		for (int[] p : pixels) {
-			RenderUtils.drawRect(ctx, x + p[0] - 1, y + p[1] - 1, 1, 1, color);
-		}
 	}
 
 	/**

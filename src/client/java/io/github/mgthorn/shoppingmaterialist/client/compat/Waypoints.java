@@ -1,5 +1,6 @@
 package io.github.mgthorn.shoppingmaterialist.client.compat;
 
+import java.util.Collection;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.resources.Identifier;
@@ -101,6 +102,34 @@ public class Waypoints {
 		}
 
 		return "dim%" + id.getNamespace() + "$" + id.getPath().replace("/", "%");
+	}
+
+	/**
+	 * Whether all these villagers have a waypoint that is shown (false for none, or without JourneyMap)
+	 */
+	public static boolean areAllShown(Collection<RememberedVillager> villagers) {
+		return isJourneyMapLoaded() && !villagers.isEmpty()
+				&& villagers.stream().allMatch(villager -> JourneyMapWaypoints.getState(villager) == JourneyMapWaypoints.State.ON);
+	}
+
+	/**
+	 * The waypoints button of the trading list: hides the waypoints of these villagers if all are shown,
+	 * otherwise shows all of them (adding missing ones to the group "Villagers")
+	 */
+	public static void onToggleAll(Collection<RememberedVillager> villagers, GuiBase gui) {
+		if (!isJourneyMapLoaded()) {
+			gui.addMessage(MessageType.INFO, KEY + "no_journeymap");
+			return;
+		}
+
+		boolean show = !areAllShown(villagers);
+
+		for (RememberedVillager villager : villagers) {
+			if (!JourneyMapWaypoints.setShown(villager, show)) {
+				gui.addMessage(MessageType.WARNING, KEY + "not_ready");
+				return;
+			}
+		}
 	}
 
 	/**

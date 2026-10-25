@@ -22,6 +22,7 @@ public class TradingSetup {
 
 	private String name;
 	private final List<SetupPiece> pieces = new ArrayList<>();
+	private ExportOptions exportOptions = new ExportOptions();
 
 	public TradingSetup(String name) {
 		this.name = name;
@@ -37,6 +38,10 @@ public class TradingSetup {
 
 	public List<SetupPiece> getPieces() {
 		return this.pieces;
+	}
+
+	public ExportOptions getExportOptions() {
+		return this.exportOptions;
 	}
 
 	/**
@@ -82,6 +87,7 @@ public class TradingSetup {
 		JsonArray array = new JsonArray();
 		this.pieces.forEach(piece -> array.add(piece.toJson()));
 		obj.add("pieces", array);
+		obj.add("export", this.exportOptions.toJson());
 		return obj;
 	}
 
@@ -96,6 +102,10 @@ public class TradingSetup {
 					setup.pieces.add(piece);
 				}
 			}
+		}
+
+		if (obj.has("export") && obj.get("export").isJsonObject()) {
+			setup.exportOptions = ExportOptions.fromJson(obj.getAsJsonObject("export"));
 		}
 
 		return setup;

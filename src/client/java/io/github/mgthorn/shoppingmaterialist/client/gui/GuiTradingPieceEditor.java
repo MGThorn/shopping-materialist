@@ -72,8 +72,8 @@ public class GuiTradingPieceEditor extends GuiBase {
 		x += 126;
 
 		String source = StringUtils.translate(KEY + "source", this.piece.getSource().getDisplayName());
-		ButtonGeneric sourceButton = new ButtonGeneric(x, y, this.getStringWidth(source) + 10, 20, source,
-				StringUtils.translate(Reference.MOD_ID + ".gui.trading.source.hover"));
+		ButtonGeneric sourceButton = Hover.Button.of(x, y, this.getStringWidth(source) + 10, 20, source,
+				Reference.MOD_ID + ".gui.trading.source.hover");
 		this.addButton(sourceButton, (btn, mouseButton) -> this.change(() -> this.piece.setSource(this.piece.getSource().next())));
 
 		if (this.piece.getSource() == SetupPiece.Source.CRAFT && !CraftingRecipes.isCraftable(this.piece.getItem())) {

@@ -65,6 +65,8 @@ import io.github.mgthorn.shoppingmaterialist.client.trading.WorldKey;
  */
 public class GuiVillagerBrowser extends GuiBase {
 	private static final String KEY = Reference.MOD_ID + ".gui.trading.villager_browser.";
+	// Sellers listed in the tooltip of an offer; clicking it shows all of them
+	private static final int MAX_SELLERS = 3;
 	private static final int TOP_Y = 26;
 	private static final int CELL = 18;
 	private static final int LABEL_HEIGHT = 12;
@@ -241,9 +243,16 @@ public class GuiVillagerBrowser extends GuiBase {
 	}
 
 	/**
+	 * The level as I - V, empty if unknown
+	 */
+	static String getLevelText(RememberedVillager villager) {
+		return villager.level >= 1 && villager.level <= ROMAN.length ? ROMAN[villager.level - 1] : "";
+	}
+
+	/**
 	 * The block a villager works at, e.g. a lectern for librarians
 	 */
-	private static ItemStack getJobIcon(RememberedVillager villager) {
+	static ItemStack getJobIcon(RememberedVillager villager) {
 		if (RememberedVillager.TYPE_WANDERING_TRADER.equals(villager.type)) {
 			return new ItemStack(Items.WANDERING_TRADER_SPAWN_EGG);
 		}
@@ -292,7 +301,7 @@ public class GuiVillagerBrowser extends GuiBase {
 		tooltip.add(this.formatDeal(offer) + " " + StringUtils.translate(KEY + "uses", offer.uses, offer.maxUses));
 
 		if (isMaybeRestocked(villager, offer)) {
-			tooltip.add(StringUtils.translate(KEY + "maybe_restocked", formatAge(villager.lastSeen)));
+			tooltip.add(GuiBase.TXT_YELLOW + StringUtils.translate(KEY + "maybe_restocked", formatAge(villager.lastSeen)));
 		}
 
 		return tooltip;
@@ -480,12 +489,12 @@ public class GuiVillagerBrowser extends GuiBase {
 
 			// Between the coordinates and the delete button: chat, then waypoint
 			int waypointX = deleteX - 4 - Waypoints.getButtonWidth();
-			this.addButton(new ButtonGeneric(waypointX - 4 - this.getChatButtonWidth(), y, this.getChatButtonWidth(), 16,
-							StringUtils.translate(KEY + "chat"), StringUtils.translate(KEY + "chat.hover")),
+			this.addButton(Hover.Button.of(waypointX - 4 - this.getChatButtonWidth(), y, this.getChatButtonWidth(), 16,
+							StringUtils.translate(KEY + "chat"), KEY + "chat.hover"),
 					(btn, mouseButton) -> Waypoints.onChatButton(villager));
 
-			this.addButton(new ButtonGeneric(waypointX, y, Waypoints.getButtonWidth(), 16,
-							Waypoints.getButtonLabel(villager), StringUtils.translate(KEY + "waypoint.hover")),
+			this.addButton(Hover.Button.of(waypointX, y, Waypoints.getButtonWidth(), 16,
+							Waypoints.getButtonLabel(villager), KEY + "waypoint.hover"),
 					(btn, mouseButton) -> {
 						Waypoints.onWaypointButton(villager, this);
 						// Shows the new state on the button
@@ -506,8 +515,8 @@ public class GuiVillagerBrowser extends GuiBase {
 		// Bottom right: turn off all waypoints of the JourneyMap group
 		String disableAll = StringUtils.translate(KEY + "waypoints_off");
 		int disableAllWidth = this.getStringWidth(disableAll) + 10;
-		this.addButton(new ButtonGeneric(this.getScreenWidth() - 12 - disableAllWidth, y, disableAllWidth, 20, disableAll,
-						StringUtils.translate(KEY + "waypoints_off.hover")),
+		this.addButton(Hover.Button.of(this.getScreenWidth() - 12 - disableAllWidth, y, disableAllWidth, 20, disableAll,
+						KEY + "waypoints_off.hover"),
 				(btn, mouseButton) -> {
 					Waypoints.onDisableAll(this);
 					this.initGui();
@@ -622,7 +631,9 @@ public class GuiVillagerBrowser extends GuiBase {
 
 		for (HitBox box : this.hitBoxes) {
 			if (box.contains(mouseX, mouseY)) {
-				RenderUtils.drawHoverText(ctx, mouseX, mouseY, box.tooltip());
+				String click = box.offer() == null ? null
+						: StringUtils.translate(box.offer().equals(selected) ? KEY + "click.show_all" : KEY + "click.filter");
+				RenderUtils.drawHoverText(ctx, mouseX, mouseY, Hover.lines(box.tooltip(), click));
 				break;
 			}
 		}
@@ -673,22 +684,32 @@ public class GuiVillagerBrowser extends GuiBase {
 		this.drawSmallNumber(ctx, sellers.size(), x, cellY, false, AQUA);
 
 		List<String> tooltip = new ArrayList<>();
+		List<String> details = new ArrayList<>();
 		tooltip.add(key.getName());
 
 		if (key.group() == Group.ITEMS) {
 			int perTrade = getCheapestSeller(sellers).offer().resultCount;
 			this.drawCount(ctx, stack, perTrade, x + 1, cellY + 1);
 
-			tooltip.add(StringUtils.translate(KEY + "legend.villagers_sell", sellers.size()));
-			tooltip.add(StringUtils.translate(KEY + "legend.per_trade", perTrade, key.getName()));
+			details.add(StringUtils.translate(KEY + "legend.villagers_sell", sellers.size()));
+			details.add(StringUtils.translate(KEY + "legend.per_trade", perTrade, key.getName()));
+		}
+		else {
+			details.add(StringUtils.translate(KEY + "legend.villagers_sell", sellers.size()));
 		}
 
-		for (Seller seller : sellers) {
+		// The nearest sellers; the others are shown by clicking (the sellers are sorted by distance)
+		for (Seller seller : sellers.subList(0, Math.min(MAX_SELLERS, sellers.size()))) {
 			tooltip.add(StringUtils.translate(KEY + "seller", seller.villager().getDisplayName(),
-					GuiTradingLines.formatCost(seller.offer()), seller.villager().getLocationText()));
+					GuiTradingLines.formatCost(seller.offer()), Hover.value(seller.villager().getLocationText())));
 		}
 
-		tooltip.add(StringUtils.translate(key.equals(selected) ? KEY + "click.show_all" : KEY + "click.filter"));
+		if (sellers.size() > MAX_SELLERS) {
+			tooltip.add(GuiBase.TXT_GRAY + StringUtils.translate(KEY + "more_sellers", sellers.size() - MAX_SELLERS));
+		}
+
+		tooltip.add(Hover.MORE);
+		tooltip.addAll(details);
 		this.hitBoxes.add(new HitBox(x, cellY, CELL, CELL, tooltip, key));
 	}
 
@@ -716,11 +737,12 @@ public class GuiVillagerBrowser extends GuiBase {
 		String name = key.getName();
 		List<String> tooltip = new ArrayList<>();
 		tooltip.add(StringUtils.translate(KEY + "buys", name));
+		tooltip.add(StringUtils.translate(KEY + "summary", Hover.value(sellers.size()), Hover.value(tradesLeft), Hover.value(perTrade)));
+		tooltip.add(StringUtils.translate(KEY + "legend.total", Hover.value(total), name));
+		tooltip.add(Hover.MORE);
 		tooltip.add(StringUtils.translate(KEY + "legend.villagers", sellers.size()));
 		tooltip.add(StringUtils.translate(KEY + "legend.trades", tradesLeft));
 		tooltip.add(StringUtils.translate(KEY + "legend.per_trade", perTrade, name));
-		tooltip.add(StringUtils.translate(KEY + "legend.total", total, name));
-		tooltip.add(StringUtils.translate(key.equals(selected) ? KEY + "click.show_all" : KEY + "click.filter"));
 		this.hitBoxes.add(new HitBox(x, y, width - 6, CELL, tooltip, key));
 	}
 
@@ -734,7 +756,7 @@ public class GuiVillagerBrowser extends GuiBase {
 		this.drawStringWithShadow(ctx, String.valueOf(total), x + CELL + 1, y + 5, WHITE);
 
 		List<String> tooltip = new ArrayList<>();
-		tooltip.add(StringUtils.translate(KEY + "emeralds.total", total));
+		tooltip.add(StringUtils.translate(KEY + "emeralds.total", Hover.value(total)));
 		String stacks = formatStacks(total);
 
 		if (stacks != null) {
@@ -775,8 +797,8 @@ public class GuiVillagerBrowser extends GuiBase {
 			int y = this.listY + (i - this.scroll) * ROW_HEIGHT;
 			int iconY = y + (ROW_HEIGHT - 16) / 2;
 			int x = 12;
-			List<String> info = List.of(villager.getDisplayName(), villager.getCoordinates() + " (" + villager.dimension + ")",
-					StringUtils.translate(KEY + "info", villager.offers.size(), formatAge(villager.lastSeen)));
+			List<String> info = List.of(villager.getDisplayName(), Hover.value(villager.getCoordinates()) + " (" + villager.dimension + ")",
+					GuiBase.TXT_GRAY + StringUtils.translate(KEY + "info", villager.offers.size(), formatAge(villager.lastSeen)));
 
 			LivingEntity entity = SHOW_VILLAGER_ENTITY ? this.getEntity(villager) : null;
 
@@ -802,8 +824,7 @@ public class GuiVillagerBrowser extends GuiBase {
 			this.hitBoxes.add(new HitBox(x, iconY, 16, 16, info, null));
 			x += 20;
 
-			String level = villager.level >= 1 && villager.level <= ROMAN.length ? ROMAN[villager.level - 1] : "";
-			this.drawStringWithShadow(ctx, level, x, iconY + 4, GOLD);
+			this.drawStringWithShadow(ctx, getLevelText(villager), x, iconY + 4, GOLD);
 			x += 22;
 
 			int distance = villager.getDistance();
